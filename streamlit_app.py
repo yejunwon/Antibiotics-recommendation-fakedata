@@ -242,8 +242,6 @@ def draw_kg():
     return plt
 
 # ---- Streamlit 인터페이스 ----
-# ---- Streamlit 인터페이스 ----
-st.set_page_config(page_title="항생제 추천 시스템", layout="wide")
 st.title("항생제 추천 시스템 (Streamlit Demo)")
 
 # 환자 선택
@@ -255,6 +253,7 @@ patient_idx = st.selectbox(
 patient = patients[patient_idx]
 
 # 환자 정보 표시 - 표 + 감수성 테이블
+import pandas as pd
 
 # 1. 환자 주요정보 표로 요약
 summary = {
@@ -288,18 +287,7 @@ with st.expander("Knowledge Graph 시각화"):
 if st.button("항생제 추천/결과 보기"):
     result, log = recommend_antibiotics(patient)
     st.subheader("추천 항생제")
-    if result:
-        st.write(
-            "  ".join([
-                f"<span style='background-color:#292b2c; color:#ffe066; padding:3px 10px; border-radius:10px; font-size:1.1em; margin:2px; display:inline-block;'>💊 {abx}</span>"
-                for abx in result
-            ]),
-            unsafe_allow_html=True
-        )
-    else:
-        st.error("추천 항생제가 없습니다.")
+    st.write(result)
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
-
-
