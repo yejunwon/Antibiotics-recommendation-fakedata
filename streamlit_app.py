@@ -242,6 +242,7 @@ def draw_kg():
     return plt
 
 # ---- Streamlit 인터페이스 ----
+# ---- Streamlit 인터페이스 ----
 st.set_page_config(page_title="항생제 추천 시스템", layout="wide")
 st.title("항생제 추천 시스템 (Streamlit Demo)")
 
@@ -253,9 +254,30 @@ patient_idx = st.selectbox(
 )
 patient = patients[patient_idx]
 
-# 환자 정보 표시
-st.subheader("환자 정보")
-st.json(patient)
+# 환자 정보 표시 - 표 + 감수성 테이블
+import pandas as pd
+
+# 1. 환자 주요정보 표로 요약
+summary = {
+    "ID": patient['patient_id'],
+    "연령": patient['age'],
+    "신장수치": patient['renal_function']['creatinine'],
+    "빌리루빈": patient['hepatic_function']['bilirubin'],
+    "감염중증도": patient['infection_severity'],
+    "감염균": patient['infectious_agent'],
+    "Gram": patient['gram_status'],
+    "중성구감소증": '있음' if patient['neutropenia'] else '없음',
+    "알러지": ", ".join(patient['allergy']) if patient['allergy'] else "-",
+    "Drug Interaction": ", ".join(patient['drug_interactions']) if patient['drug_interactions'] else "-",
+}
+st.subheader("환자 정보 요약")
+st.table(pd.DataFrame([summary]))
+
+# 2. 항생제별 감수성 표
+st.subheader("항생제별 감수성")
+abx_sir = patient['susceptibility'][patient['infectious_agent']]
+df_sir = pd.DataFrame(list(abx_sir.items()), columns=["항생제", "SIR"])
+st.dataframe(df_sir)
 
 # Knowledge Graph 시각화 버튼
 with st.expander("Knowledge Graph 시각화"):
@@ -270,4 +292,5 @@ if st.button("항생제 추천/결과 보기"):
     st.write(result)
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
