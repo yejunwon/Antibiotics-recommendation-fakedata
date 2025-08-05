@@ -6,7 +6,7 @@ import numpy as np
 import json
 import os
 # ---- 데이터 로딩 ----
-os.chdir(r"C:\Users\yejun\OneDrive\Desktop\항생제")
+
 with open("Patient Example.json", "r", encoding="utf-8") as f:
     patients = json.load(f)
 
@@ -270,3 +270,4 @@ if st.button("항생제 추천/결과 보기"):
     st.write(result)
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
