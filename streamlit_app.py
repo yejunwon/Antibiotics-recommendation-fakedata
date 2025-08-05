@@ -7,8 +7,7 @@ import json
 import os
 # ---- 데이터 로딩 ----
 
-with open("Patient Example.json", "r", encoding="utf-8") as f:
-    patients = json.load(f)
+
 
 abx_nodes = [
     "ceftriaxone", "cefepime", "piperacillin/tazobactam",
@@ -240,102 +239,117 @@ def draw_kg():
     plt.axis('off')
     plt.tight_layout()
     return plt
-
-# ---- Streamlit 인터페이스 ----
-st.title("항생제 추천 시스템 (Streamlit Demo)")
-required_fields = [
-    ("age", "연령 (나이)"),
-    ("renal_function.creatinine", "신장 수치 (Creatinine)"),
-    ("gram_status", "Gram 상태"),
-    # 필요시 필드 추가 가능
-]
-
-missing_fields = []
-for field, label in required_fields:
-    # Nested dict 지원
-    value = patient
-    for key in field.split("."):
-        value = value.get(key, None) if isinstance(value, dict) else None
-    if value is None or (isinstance(value, str) and value.strip() == ""):
-        missing_fields.append((field, label))
-
-user_inputs = {}
-if missing_fields:
-    st.warning("⚠️ 아래 필수 정보가 누락되었습니다. 입력 후 [항생제 추천/결과 보기]를 눌러주세요!")
-    for field, label in missing_fields:
-        default = ""
-        # 숫자/문자 구분해서 입력받기 (더 세밀하게 가능)
-        if "age" in field or "creatinine" in field:
-            user_val = st.number_input(f"{label}", min_value=0.0, step=1.0, key=field)
+    def get_nested(d, key_string):
+    keys = key_string.split(".")
+    for k in keys:
+        if isinstance(d, dict) and k in d:
+            d = d[k]
         else:
-            user_val = st.text_input(f"{label}", key=field)
-        user_inputs[field] = user_val
-def set_patient_field(patient, field, value):
-    keys = field.split('.')
-    d = patient
+            return None
+    return d
+
+def set_nested(d, key_string, value):
+    keys = key_string.split(".")
     for k in keys[:-1]:
         if k not in d or not isinstance(d[k], dict):
             d[k] = {}
         d = d[k]
     d[keys[-1]] = value
 
-if missing_fields:
-    # 입력값이 다 들어와야만 추천로직 실행
-    if st.button("필수값 입력/업데이트 후 추천 실행"):
-        for field, val in user_inputs.items():
-            if val is not None and val != "":
-                # float/int 자동 변환
-                if "age" in field:
-                    set_patient_field(patient, field, int(val))
-                elif "creatinine" in field:
-                    set_patient_field(patient, field, float(val))
-                else:
-                    set_patient_field(patient, field, val)
-        st.success("필수값이 입력되었습니다. 이제 [항생제 추천/결과 보기]를 눌러주세요!")
-        st.stop()
-    else:
-        st.stop()
+with open("Patient Example.json", "r", encoding="utf-8") as f:
+    patients = json.load(f)
+# ---- Streamlit 인터페이스 ----
+st.title("항생제 추천 시스템 (Streamlit Demo)")
 
 # 환자 선택
 patient_idx = st.selectbox(
     "환자 선택",
     range(len(patients)),
-    format_func=lambda i: f"{patients[i]['patient_id']} ({patients[i]['infectious_agent']})"
+    format_func=lambda i: f"{patients[i]['patient_id']} ({patients[i].get('infectious_agent', '미상')})"
 )
 patient = patients[patient_idx]
 
-# 환자 정보 표시 - 표 + 감수성 테이블
-import pandas as pd
+# =========================
+# 1. 필수값 결측 검사 및 입력폼
+# =========================
+required_fields = [
+    ("age", "연령 (나이)"),
+    ("renal_function.creatinine", "신장 수치 (Creatinine)"),
+    ("gram_status", "Gram 상태"),
+    ("infectious_agent", "감염균명"),
+]
 
-# 1. 환자 주요정보 표로 요약
+missing_fields = []
+for field, label in required_fields:
+    value = get_nested(patient, field)
+    if value is None or (isinstance(value, str) and value.strip() == ""):
+        missing_fields.append((field, label))
+
+user_inputs = {}
+if missing_fields:
+    st.warning("⚠️ 아래 필수 정보가 누락되었습니다. 입력 후 [필수값 반영]을 누르세요.")
+    for field, label in missing_fields:
+        # 입력 타입 지정 (int, float, str 등)
+        if "creatinine" in field:
+            user_val = st.number_input(f"{label}", min_value=0.0, step=0.1, key=f"input_{field}")
+        elif "age" in field:
+            user_val = st.number_input(f"{label}", min_value=0, step=1, key=f"input_{field}")
+        else:
+            user_val = st.text_input(f"{label}", key=f"input_{field}")
+        user_inputs[field] = user_val
+
+    # 필수값 반영 버튼
+    if st.button("필수값 반영"):
+        for field, val in user_inputs.items():
+            # 값이 비어있지 않으면 patient dict에 넣기
+            if val is not None and val != "" and not (isinstance(val, float) and val != val):  # nan 방지
+                # 타입 변환
+                if "age" in field:
+                    set_nested(patient, field, int(val))
+                elif "creatinine" in field:
+                    set_nested(patient, field, float(val))
+                else:
+                    set_nested(patient, field, str(val).strip())
+        st.success("필수값이 반영되었습니다. 아래에서 [항생제 추천/결과 보기]를 눌러주세요!")
+        st.stop()
+    else:
+        st.info("모든 필수값을 입력하고 [필수값 반영]을 눌러주세요.")
+        st.stop()
+
+# =========================
+# 2. 환자 요약 정보 표
+# =========================
 summary = {
     "ID": patient['patient_id'],
     "연령": patient['age'],
     "신장수치": patient['renal_function']['creatinine'],
     "빌리루빈": patient['hepatic_function']['bilirubin'],
-    "감염중증도": patient['infection_severity'],
-    "감염균": patient['infectious_agent'],
-    "Gram": patient['gram_status'],
-    "중성구감소증": '있음' if patient['neutropenia'] else '없음',
-    "알러지": ", ".join(patient['allergy']) if patient['allergy'] else "-",
-    "Drug Interaction": ", ".join(patient['drug_interactions']) if patient['drug_interactions'] else "-",
+    "감염중증도": patient.get('infection_severity', ''),
+    "감염균": patient.get('infectious_agent', ''),
+    "Gram": patient.get('gram_status', ''),
+    "중성구감소증": '있음' if patient.get('neutropenia') else '없음',
+    "알러지": ", ".join(patient.get('allergy', [])) if patient.get('allergy') else "-",
+    "Drug Interaction": ", ".join(patient.get('drug_interactions', [])) if patient.get('drug_interactions') else "-",
 }
 st.subheader("환자 정보 요약")
 st.table(pd.DataFrame([summary]))
 
-# 2. 항생제별 감수성 표
+# =========================
+# 3. 항생제별 감수성 표
+# =========================
 st.subheader("항생제별 감수성")
-abx_sir = patient['susceptibility'][patient['infectious_agent']]
+try:
+    abx_sir = patient['susceptibility'][patient['infectious_agent']]
+except Exception:
+    abx_sir = {}
 df_sir = pd.DataFrame(list(abx_sir.items()), columns=["항생제", "SIR"])
 st.dataframe(df_sir)
 
-# Knowledge Graph 시각화 버튼
-with st.expander("Knowledge Graph 시각화"):
-    fig = draw_kg()
-    st.pyplot(fig)
-    plt.close()  # Streamlit에서 자원 누수 방지
+# (Knowledge Graph 시각화, 추천 함수 등 기존 코드 그대로...)
 
-# 추천 결과/Reasoning Log
+# =========================
+# 4. 추천 결과/Reasoning Log
+# =========================
 if st.button("항생제 추천/결과 보기"):
     result, log = recommend_antibiotics(patient)
     st.subheader("추천 항생제")
@@ -344,7 +358,6 @@ if st.button("항생제 추천/결과 보기"):
             st.markdown(f"- 💊 **{abx}**")
     else:
         st.warning("추천 항생제가 없습니다.")
-
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
