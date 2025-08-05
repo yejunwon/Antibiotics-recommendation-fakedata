@@ -277,11 +277,6 @@ abx_sir = patient['susceptibility'][patient['infectious_agent']]
 df_sir = pd.DataFrame(list(abx_sir.items()), columns=["항생제", "SIR"])
 st.dataframe(df_sir)
 
-# Knowledge Graph 시각화 버튼
-with st.expander("Knowledge Graph 시각화"):
-    fig = draw_kg()
-    st.pyplot(fig)
-    plt.close()  # Streamlit에서 자원 누수 방지
 
 # 추천 결과/Reasoning Log
 if st.button("항생제 추천/결과 보기"):
@@ -296,5 +291,6 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
