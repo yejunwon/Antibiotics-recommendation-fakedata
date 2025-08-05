@@ -242,7 +242,7 @@ def draw_kg():
     return plt
 
 # ---- Streamlit 인터페이스 ----
-st.title("항생제 추천 시스템 (Streamlit Demo)")
+st.title("↓ 기본환자정보 및 항생제 감수성 정보를 통한 항생제 추천 ↓")
 
 # 환자 선택
 patient_idx = st.selectbox(
@@ -291,6 +291,7 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
 
