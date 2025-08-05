@@ -92,6 +92,59 @@ def get_patient_states(patient):
     return states
 
 def recommend_antibiotics(patient):
+    # 1. 기본 정보 추출
+    # ... (age, creat, gram, agent 등) ...
+
+    log = []
+
+    # ===============================
+    # 0. 데이터 결측 상황 분기 처리
+    # ===============================
+    if not agent and gram and (age is not None) and (creat is not None):
+        # [Case 1] 감염균 정보만 없음 (Gram/나이/신기능 모두 있음)
+        log.append("⏳ 감염균 정보 없음 → broad-spectrum antibiotics 우선 적용")
+        candidates = [abx for abx in abx_nodes if set(abx_to_gram[abx]) == {'gram_positive', 'gram_negative'}]
+        # → 이후 toxic, allergy filtering 등 기존 코드(공통 파이프라인)로 이어짐
+
+    elif (age is None) or (creat is None):
+        # [Case 2] 나이 또는 creatinine 없음
+        log.append("⏳ 나이/신기능 정보 불충분 → broad-spectrum antibiotics 모두 표시, filtering 미적용")
+        candidates = [abx for abx in abx_nodes if set(abx_to_gram[abx]) == {'gram_positive', 'gram_negative'}]
+        # → allergy, drug interaction만 적용, 나머지는 skip 후 return
+
+        # allergy/drug interaction filtering만 적용
+        filtered = []
+        for abx in candidates:
+            if abx in allergy or abx in drug_inter:
+                continue
+            filtered.append(abx)
+        log.append("🔹 알러지/Drug Interaction 제외 완료")
+        log.append(f"추천: {', '.join(filtered) if filtered else '없음'}")
+        return filtered, log
+
+    elif (not agent) and (not gram):
+        # [Case 3] 감염균/Gram/나이/신기능 정보 전부 없음
+        log.append("⏳ 모든 정보 없음 → broad-spectrum antibiotics 전부 추천 (알러지 제외)")
+        candidates = [abx for abx in abx_nodes if set(abx_to_gram[abx]) == {'gram_positive', 'gram_negative'}]
+        # allergy만 제외 후 return
+        filtered = []
+        for abx in candidates:
+            if abx in allergy:
+                continue
+            filtered.append(abx)
+        log.append("🔹 알러지 제외 완료")
+        log.append(f"추천: {', '.join(filtered) if filtered else '없음'}")
+        return filtered, log
+
+    else:
+        # 기존 recommend_antibiotics 전체 코드 (Gram/나이/신기능/agent 전부 있는 경우)
+        # 아래에서 candidates = [] 로부터 기존 파이프라인 그대로!
+        # (즉, 기존 코드 그대로 사용)
+        # ...
+        # 마지막에 return filtered2, log
+        pass
+
+
     gram = patient['gram_status']
     agent = patient['infectious_agent']
     allergy = set(patient.get('allergy', []))
@@ -296,5 +349,6 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
