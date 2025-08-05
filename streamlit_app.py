@@ -287,7 +287,8 @@ with st.expander("Knowledge Graph 시각화"):
 if st.button("항생제 추천/결과 보기"):
     result, log = recommend_antibiotics(patient)
     st.subheader("추천 항생제")
-    st.write(result)
+    st.text(result)
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
