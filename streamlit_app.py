@@ -243,6 +243,58 @@ def draw_kg():
 
 # ---- Streamlit 인터페이스 ----
 st.title("항생제 추천 시스템 (Streamlit Demo)")
+required_fields = [
+    ("age", "연령 (나이)"),
+    ("renal_function.creatinine", "신장 수치 (Creatinine)"),
+    ("gram_status", "Gram 상태"),
+    # 필요시 필드 추가 가능
+]
+
+missing_fields = []
+for field, label in required_fields:
+    # Nested dict 지원
+    value = patient
+    for key in field.split("."):
+        value = value.get(key, None) if isinstance(value, dict) else None
+    if value is None or (isinstance(value, str) and value.strip() == ""):
+        missing_fields.append((field, label))
+
+user_inputs = {}
+if missing_fields:
+    st.warning("⚠️ 아래 필수 정보가 누락되었습니다. 입력 후 [항생제 추천/결과 보기]를 눌러주세요!")
+    for field, label in missing_fields:
+        default = ""
+        # 숫자/문자 구분해서 입력받기 (더 세밀하게 가능)
+        if "age" in field or "creatinine" in field:
+            user_val = st.number_input(f"{label}", min_value=0.0, step=1.0, key=field)
+        else:
+            user_val = st.text_input(f"{label}", key=field)
+        user_inputs[field] = user_val
+def set_patient_field(patient, field, value):
+    keys = field.split('.')
+    d = patient
+    for k in keys[:-1]:
+        if k not in d or not isinstance(d[k], dict):
+            d[k] = {}
+        d = d[k]
+    d[keys[-1]] = value
+
+if missing_fields:
+    # 입력값이 다 들어와야만 추천로직 실행
+    if st.button("필수값 입력/업데이트 후 추천 실행"):
+        for field, val in user_inputs.items():
+            if val is not None and val != "":
+                # float/int 자동 변환
+                if "age" in field:
+                    set_patient_field(patient, field, int(val))
+                elif "creatinine" in field:
+                    set_patient_field(patient, field, float(val))
+                else:
+                    set_patient_field(patient, field, val)
+        st.success("필수값이 입력되었습니다. 이제 [항생제 추천/결과 보기]를 눌러주세요!")
+        st.stop()
+    else:
+        st.stop()
 
 # 환자 선택
 patient_idx = st.selectbox(
@@ -296,5 +348,6 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
