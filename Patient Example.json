@@ -188,10 +188,7 @@
         "gentamicin": "I", "amikacin": "S", "ciprofloxacin": "R", "levofloxacin": "R", "vancomycin": "S"
       }
     }
-  }
-]
-
-[
+  },
   {
     "patient_id": "N001",
     "age": null,
@@ -340,5 +337,6 @@
     }
   }
 ]
+
 
 
