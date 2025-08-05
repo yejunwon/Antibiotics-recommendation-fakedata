@@ -288,17 +288,12 @@ with st.expander("Knowledge Graph 시각화"):
 # 추천 결과/Reasoning Log
 if st.button("항생제 추천/결과 보기"):
     result, log = recommend_antibiotics(patient)
-st.subheader("추천 항생제")
-if result:
-    # 예쁘게: 항생제별로 뱃지 스타일 or 리스트 출력
-    st.markdown(
-        "  ".join([f":pill: **{abx}**" for abx in result])
-    )
-else:
-    st.markdown("<span style='color:crimson; font-weight:bold;'>추천 항생제가 없습니다.</span>", unsafe_allow_html=True)
+    st.subheader("추천 항생제")
+    st.write(result)
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
 
