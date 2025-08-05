@@ -239,7 +239,7 @@ def draw_kg():
     plt.axis('off')
     plt.tight_layout()
     return plt
-    def get_nested(d, key_string):
+def get_nested(d, key_string):
     keys = key_string.split(".")
     for k in keys:
         if isinstance(d, dict) and k in d:
@@ -361,6 +361,7 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
 
