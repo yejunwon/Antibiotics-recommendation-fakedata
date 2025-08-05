@@ -240,6 +240,34 @@ def draw_kg():
     plt.axis('off')
     plt.tight_layout()
     return plt
+    
+def get_topsis_matrix(patient, abx_list):
+    age_score, creat_score = get_status_score(patient)
+    data = []
+    abx_label = []
+    for abx in abx_list:
+        a_risk = abx_risk[abx]['age']
+        c_risk = abx_risk[abx]['creatinine']
+        age_tox = get_onehot(age_score * a_risk)
+        creat_tox = get_onehot(creat_score * c_risk)
+        data.append([age_tox, creat_tox])
+        abx_label.append(abx)
+    data = np.array(data)
+    return abx_label, data
+def plot_topsis_scatter(abx_label, data, Ci):
+    plt.figure(figsize=(6, 5))
+    scatter = plt.scatter(data[:, 0], data[:, 1], c=Ci, cmap="coolwarm", s=180, edgecolors='k')
+    for i, abx in enumerate(abx_label):
+        plt.text(data[i,0]+0.05, data[i,1], abx, fontsize=10)
+    plt.xlabel("Age Toxicity (one-hot)")
+    plt.ylabel("Creatinine Toxicity (one-hot)")
+    plt.title("TOPSIS 항생제 위험/점수 시각화")
+    cbar = plt.colorbar(scatter)
+    cbar.set_label("Ci (TOPSIS 점수)")
+    plt.tight_layout()
+    return plt
+
+
 
 # ---- Streamlit 인터페이스 ----
 st.title("↓ 기본환자정보 및 항생제 감수성 정보를 통한 항생제 추천 ↓")
@@ -291,6 +319,26 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
+if st.button("TOPSIS 시각화"):
+    result, log = recommend_antibiotics(patient)
+    if result:
+        abx_label, data = get_topsis_matrix(patient, result)
+        age_score, creat_score = get_status_score(patient)
+        A_list = data[:,0]
+        C_list = data[:,1]
+        # TOPSIS 계산
+        ideal = data.min(axis=0)
+        anti_ideal = data.max(axis=0)
+        dist_to_ideal = np.linalg.norm(data - ideal, axis=1)
+        dist_to_anti = np.linalg.norm(data - anti_ideal, axis=1)
+        Ci = dist_to_anti / (dist_to_ideal + dist_to_anti + 1e-9)
+        fig = plot_topsis_scatter(abx_label, data, Ci)
+        st.pyplot(fig)
+    else:
+        st.info("추천 항생제가 없으므로 시각화 불가")
+
+
 
 
 
