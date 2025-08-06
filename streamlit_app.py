@@ -270,7 +270,7 @@ def plot_topsis_scatter(abx_label, data, Ci):
 
 
 # ---- Streamlit 인터페이스 ----
-st.title("↓ 기본환자정보 및 항생제 감수성 정보를 통한 항생제 추천 ↓")
+st.title("Test_visualisation_NAconsiderX")
 
 # 환자 선택
 patient_idx = st.selectbox(
@@ -320,7 +320,7 @@ if st.button("항생제 추천/결과 보기"):
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
 
-if st.button("TOPSIS 시각화"):
+if st.button("시각화"):
     result, log = recommend_antibiotics(patient)
     if result:
         abx_label, data = get_topsis_matrix(patient, result)
@@ -337,6 +337,7 @@ if st.button("TOPSIS 시각화"):
         st.pyplot(fig)
     else:
         st.info("추천 항생제가 없으므로 시각화 불가")
+
 
 
 
