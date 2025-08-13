@@ -6,15 +6,19 @@
     "hepatic_function": {"bilirubin": 1.7, "AST": 54, "ALT": 44},
     "neutropenia": true,
     "infection_severity": "sepsis",
-    "allergy": ["imipenem"],
-    "drug_interactions": ["linezolid"],
-    "infectious_agent": "E.coli",
+    "allergy": ["Meropenem 500mg"],
+    "drug_interactions": ["cefePIMe 1g"],
+    "infectious_agent": "Escherichia coli",
     "gram_status": "gram_negative",
     "susceptibility": {
-      "E.coli": {
-        "meropenem": "S", "imipenem": "S", "ertapenem": "S",
-        "piperacillin/tazobactam": "S", "cefepime": "S", "ceftazidime": "S", "ceftriaxone": "S",
-        "gentamicin": "I", "amikacin": "S", "ciprofloxacin": "I", "levofloxacin": "S", "vancomycin": "R"
+      "Escherichia coli": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "S",
+        "cefePIMe 1g": "S",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "I",
+        "Meropenem 500mg": "S"
       }
     }
   },
@@ -27,13 +31,17 @@
     "infection_severity": "mild",
     "allergy": [],
     "drug_interactions": [],
-    "infectious_agent": "K.pneumoniae",
+    "infectious_agent": "Klebsiella pneumoniae",
     "gram_status": "gram_negative",
     "susceptibility": {
-      "K.pneumoniae": {
-        "meropenem": "S", "imipenem": "S", "ertapenem": "S",
-        "piperacillin/tazobactam": "S", "cefepime": "I", "ceftazidime": "R", "ceftriaxone": "R",
-        "gentamicin": "S", "amikacin": "S", "ciprofloxacin": "R", "levofloxacin": "I", "vancomycin": "R"
+      "Klebsiella pneumoniae": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "I",
+        "cefePIMe 1g": "S",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "I",
+        "Meropenem 500mg": "S"
       }
     }
   },
@@ -44,15 +52,19 @@
     "hepatic_function": {"bilirubin": 0.9, "AST": 35, "ALT": 32},
     "neutropenia": false,
     "infection_severity": "moderate",
-    "allergy": ["vancomycin"],
-    "drug_interactions": ["piperacillin/tazobactam"],
-    "infectious_agent": "S.aureus",
+    "allergy": ["cefePIMe 1g"],
+    "drug_interactions": ["Tazoferan(R) 4.5g"],
+    "infectious_agent": "Staphylococcus aureus",
     "gram_status": "gram_positive",
     "susceptibility": {
-      "S.aureus": {
-        "meropenem": "R", "imipenem": "R", "ertapenem": "R",
-        "piperacillin/tazobactam": "I", "cefepime": "R", "ceftazidime": "R", "ceftriaxone": "R",
-        "gentamicin": "S", "amikacin": "S", "ciprofloxacin": "I", "levofloxacin": "S", "vancomycin": "S"
+      "Staphylococcus aureus": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "Azithromycin 250mg": "I",
+        "cefTRIAXone sod 2g": "R",
+        "cefePIMe 1g": "I",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Meropenem 500mg": "I"
       }
     }
   },
@@ -63,15 +75,19 @@
     "hepatic_function": {"bilirubin": 2.1, "AST": 63, "ALT": 49},
     "neutropenia": true,
     "infection_severity": "septic_shock",
-    "allergy": ["ceftriaxone", "colistin"],
+    "allergy": ["cefTRIAXone sod 2g"],
     "drug_interactions": [],
-    "infectious_agent": "P.aeruginosa",
+    "infectious_agent": "Pseudomonas aeruginosa",
     "gram_status": "gram_negative",
     "susceptibility": {
-      "P.aeruginosa": {
-        "meropenem": "S", "imipenem": "I", "ertapenem": "R",
-        "piperacillin/tazobactam": "S", "cefepime": "S", "ceftazidime": "S", "ceftriaxone": "R",
-        "gentamicin": "S", "amikacin": "S", "ciprofloxacin": "I", "levofloxacin": "R", "vancomycin": "R"
+      "Pseudomonas aeruginosa": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "R",
+        "cefePIMe 1g": "S",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Meropenem 500mg": "S"
       }
     }
   },
@@ -82,15 +98,19 @@
     "hepatic_function": {"bilirubin": 1.3, "AST": 40, "ALT": 30},
     "neutropenia": false,
     "infection_severity": "moderate",
-    "allergy": ["tigecycline"],
-    "drug_interactions": ["amikacin"],
-    "infectious_agent": "Enterococcus",
+    "allergy": ["Azithromycin 250mg"],
+    "drug_interactions": ["Amoxclan duo(R) 437.5mg/62.5mg"],
+    "infectious_agent": "Enterococcus faecalis",
     "gram_status": "gram_positive",
     "susceptibility": {
-      "Enterococcus": {
-        "meropenem": "R", "imipenem": "R", "ertapenem": "R",
-        "piperacillin/tazobactam": "S", "cefepime": "R", "ceftazidime": "R", "ceftriaxone": "R",
-        "gentamicin": "I", "amikacin": "S", "ciprofloxacin": "R", "levofloxacin": "R", "vancomycin": "S"
+      "Enterococcus faecalis": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "R",
+        "cefePIMe 1g": "R",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Meropenem 500mg": "R"
       }
     }
   },
@@ -103,13 +123,17 @@
     "infection_severity": "mild",
     "allergy": [],
     "drug_interactions": [],
-    "infectious_agent": "E.coli",
+    "infectious_agent": "Escherichia coli",
     "gram_status": "gram_negative",
     "susceptibility": {
-      "E.coli": {
-        "meropenem": "S", "imipenem": "S", "ertapenem": "S",
-        "piperacillin/tazobactam": "S", "cefepime": "S", "ceftazidime": "S", "ceftriaxone": "S",
-        "gentamicin": "I", "amikacin": "S", "ciprofloxacin": "I", "levofloxacin": "S", "vancomycin": "R"
+      "Escherichia coli": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "S",
+        "cefePIMe 1g": "I",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Meropenem 500mg": "S"
       }
     }
   },
@@ -120,15 +144,19 @@
     "hepatic_function": {"bilirubin": 1.1, "AST": 31, "ALT": 29},
     "neutropenia": false,
     "infection_severity": "moderate",
-    "allergy": ["gentamicin", "imipenem"],
-    "drug_interactions": ["cefepime"],
-    "infectious_agent": "K.pneumoniae",
+    "allergy": ["cefaZOLin 1g", "Meropenem 500mg"],
+    "drug_interactions": ["cefePIMe 1g"],
+    "infectious_agent": "Klebsiella pneumoniae",
     "gram_status": "gram_negative",
     "susceptibility": {
-      "K.pneumoniae": {
-        "meropenem": "S", "imipenem": "S", "ertapenem": "S",
-        "piperacillin/tazobactam": "S", "cefepime": "I", "ceftazidime": "R", "ceftriaxone": "R",
-        "gentamicin": "S", "amikacin": "S", "ciprofloxacin": "R", "levofloxacin": "I", "vancomycin": "R"
+      "Klebsiella pneumoniae": {
+        "Tazoferan(R) 4.5g": "I",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "I",
+        "cefePIMe 1g": "I",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Meropenem 500mg": "S"
       }
     }
   },
@@ -141,13 +169,17 @@
     "infection_severity": "mild",
     "allergy": [],
     "drug_interactions": [],
-    "infectious_agent": "P.aeruginosa",
+    "infectious_agent": "Pseudomonas aeruginosa",
     "gram_status": "gram_negative",
     "susceptibility": {
-      "P.aeruginosa": {
-        "meropenem": "S", "imipenem": "I", "ertapenem": "R",
-        "piperacillin/tazobactam": "S", "cefepime": "S", "ceftazidime": "S", "ceftriaxone": "R",
-        "gentamicin": "S", "amikacin": "S", "ciprofloxacin": "I", "levofloxacin": "R", "vancomycin": "R"
+      "Pseudomonas aeruginosa": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "R",
+        "cefePIMe 1g": "S",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Meropenem 500mg": "S"
       }
     }
   },
@@ -158,15 +190,19 @@
     "hepatic_function": {"bilirubin": 2.2, "AST": 70, "ALT": 52},
     "neutropenia": true,
     "infection_severity": "sepsis",
-    "allergy": ["vancomycin"],
-    "drug_interactions": ["linezolid"],
-    "infectious_agent": "S.aureus",
+    "allergy": ["Azithromycin 250mg"],
+    "drug_interactions": ["Tazoferan(R) 4.5g"],
+    "infectious_agent": "Staphylococcus aureus",
     "gram_status": "gram_positive",
     "susceptibility": {
-      "S.aureus": {
-        "meropenem": "R", "imipenem": "R", "ertapenem": "R",
-        "piperacillin/tazobactam": "I", "cefepime": "R", "ceftazidime": "R", "ceftriaxone": "R",
-        "gentamicin": "S", "amikacin": "S", "ciprofloxacin": "I", "levofloxacin": "S", "vancomycin": "S"
+      "Staphylococcus aureus": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "Azithromycin 250mg": "I",
+        "cefTRIAXone sod 2g": "R",
+        "cefePIMe 1g": "I",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Meropenem 500mg": "I"
       }
     }
   },
@@ -177,15 +213,19 @@
     "hepatic_function": {"bilirubin": 0.9, "AST": 29, "ALT": 35},
     "neutropenia": false,
     "infection_severity": "moderate",
-    "allergy": ["tigecycline"],
-    "drug_interactions": ["ceftriaxone"],
-    "infectious_agent": "Enterococcus",
+    "allergy": ["Tazoferan(R) 4.5g"],
+    "drug_interactions": ["cefTRIAXone sod 2g"],
+    "infectious_agent": "Enterococcus faecalis",
     "gram_status": "gram_positive",
     "susceptibility": {
-      "Enterococcus": {
-        "meropenem": "R", "imipenem": "R", "ertapenem": "R",
-        "piperacillin/tazobactam": "S", "cefepime": "R", "ceftazidime": "R", "ceftriaxone": "R",
-        "gentamicin": "I", "amikacin": "S", "ciprofloxacin": "R", "levofloxacin": "R", "vancomycin": "S"
+      "Enterococcus faecalis": {
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "Azithromycin 250mg": "R",
+        "cefTRIAXone sod 2g": "R",
+        "cefePIMe 1g": "R",
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Meropenem 500mg": "R"
       }
     }
   }
