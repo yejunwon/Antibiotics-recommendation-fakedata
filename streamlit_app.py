@@ -10,41 +10,39 @@ import os
 with open("Patient Example.json", "r", encoding="utf-8") as f:
     patients = json.load(f)
 
+# 업데이트된 항생제 목록
 abx_nodes = [
-    "ceftriaxone", "cefepime", "piperacillin/tazobactam",
-    "meropenem", "imipenem", "ertapenem",
-    "gentamicin", "amikacin",
-    "vancomycin",
-    "ciprofloxacin", "levofloxacin"
+    "Tazoferan(R) 4.5g",
+    "cefaZOLin 1g",
+    "Azithromycin 250mg",
+    "cefTRIAXone sod 2g",
+    "cefePIMe 1g",
+    "Amoxclan duo(R) 437.5mg/62.5mg",
+    "Meropenem 500mg"
 ]
 
+# 그람 양성/음성 적용 범위
 abx_to_gram = {
-    "ceftriaxone": ["gram_negative"],
-    "cefepime": ["gram_negative"],
-    "piperacillin/tazobactam": ["gram_positive", "gram_negative"],
-    "meropenem": ["gram_positive", "gram_negative"],
-    "imipenem": ["gram_positive", "gram_negative"],
-    "ertapenem": ["gram_positive", "gram_negative"],
-    "gentamicin": ["gram_positive", "gram_negative"],
-    "amikacin": ["gram_positive", "gram_negative"],
-    "vancomycin": ["gram_positive"],
-    "ciprofloxacin": ["gram_positive", "gram_negative"],
-    "levofloxacin": ["gram_positive", "gram_negative"]
+    "Tazoferan(R) 4.5g": ["gram_positive", "gram_negative"],  # 광범위
+    "cefaZOLin 1g": ["gram_positive"],                        # 주로 MSSA, 일부 GN
+    "Azithromycin 250mg": ["gram_positive"],                  # 주로 GP, 비정형균
+    "cefTRIAXone sod 2g": ["gram_negative"],                   # 일부 GP 커버 가능하나 주 대상은 GN
+    "cefePIMe 1g": ["gram_negative"],                          # GN 위주, P.aeruginosa 포함
+    "Amoxclan duo(R) 437.5mg/62.5mg": ["gram_positive", "gram_negative"],  # 광범위, E.faecalis 포함
+    "Meropenem 500mg": ["gram_positive", "gram_negative"]      # 광범위, ESBL 포함
 }
 
+# 나이·신기능 관련 위험 점수 (임상적 감안)
 abx_risk = {
-    "ceftriaxone": {"age": 1, "creatinine": 1},
-    "cefepime": {"age": 2, "creatinine": 3},
-    "piperacillin/tazobactam": {"age": 2, "creatinine": 2},
-    "meropenem": {"age": 1, "creatinine": 2},
-    "imipenem": {"age": 2, "creatinine": 2},
-    "ertapenem": {"age": 1, "creatinine": 2},
-    "gentamicin": {"age": 3, "creatinine": 5},
-    "amikacin": {"age": 5, "creatinine": 4},
-    "vancomycin": {"age": 2, "creatinine": 4},
-    "ciprofloxacin": {"age": 2, "creatinine": 1},
-    "levofloxacin": {"age": 2, "creatinine": 1}
+    "Tazoferan(R) 4.5g": {"age": 2, "creatinine": 2},
+    "cefaZOLin 1g": {"age": 1, "creatinine": 1},
+    "Azithromycin 250mg": {"age": 1, "creatinine": 0},
+    "cefTRIAXone sod 2g": {"age": 1, "creatinine": 1},
+    "cefePIMe 1g": {"age": 2, "creatinine": 3},
+    "Amoxclan duo(R) 437.5mg/62.5mg": {"age": 1, "creatinine": 1},
+    "Meropenem 500mg": {"age": 1, "creatinine": 2}
 }
+
 
 score2onehot = {
     1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 8:7, 9:8,
@@ -291,6 +289,7 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
 
