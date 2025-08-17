@@ -1,0 +1,588 @@
+[
+  {
+    "patient_id": "P001",
+    "age": 28,
+    "renal_function": {
+      "creatinine": 1.0
+    },
+    "hepatic_function": {
+      "bilirubin": 1.8,
+      "AST": 65,
+      "ALT": 58
+    },
+    "neutropenia": false,
+    "infection_severity": "mild",
+    "allergy": [],
+    "drug_interactions": [],
+    "infectious_agent": "Klebsiella pneumoniae ssp pneumoniae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Klebsiella pneumoniae ssp pneumoniae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P002",
+    "age": 23,
+    "renal_function": {
+      "creatinine": 2.9
+    },
+    "hepatic_function": {
+      "bilirubin": 1.3,
+      "AST": 51,
+      "ALT": 16
+    },
+    "neutropenia": false,
+    "infection_severity": "severe",
+    "allergy": [],
+    "drug_interactions": [
+      "Tazoferan(R) 4.5g",
+      "Meropenem 500mg"
+    ],
+    "infectious_agent": "Klebsiella pneumoniae ssp pneumoniae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Klebsiella pneumoniae ssp pneumoniae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P003",
+    "age": 82,
+    "renal_function": {
+      "creatinine": 3.4
+    },
+    "hepatic_function": {
+      "bilirubin": 0.7,
+      "AST": 23,
+      "ALT": 64
+    },
+    "neutropenia": false,
+    "infection_severity": "septic_shock",
+    "allergy": [],
+    "drug_interactions": [
+      "Meropenem 500mg",
+      "cefTRIAXone sod 2g"
+    ],
+    "infectious_agent": "Klebsiella pneumoniae ssp pneumoniae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Klebsiella pneumoniae ssp pneumoniae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P004",
+    "age": 63,
+    "renal_function": {
+      "creatinine": 0.8
+    },
+    "hepatic_function": {
+      "bilirubin": 1.8,
+      "AST": 68,
+      "ALT": 55
+    },
+    "neutropenia": true,
+    "infection_severity": "severe",
+    "allergy": [
+      "Meropenem 500mg",
+      "cefePIMe 1g"
+    ],
+    "drug_interactions": [],
+    "infectious_agent": "Klebsiella pneumoniae ssp pneumoniae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Klebsiella pneumoniae ssp pneumoniae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P005",
+    "age": 86,
+    "renal_function": {
+      "creatinine": 2.5
+    },
+    "hepatic_function": {
+      "bilirubin": 1.2,
+      "AST": 17,
+      "ALT": 15
+    },
+    "neutropenia": true,
+    "infection_severity": "sepsis",
+    "allergy": [
+      "Amoxclan duo(R) 437.5mg/62.5mg",
+      "cefaZOLin 1g"
+    ],
+    "drug_interactions": [],
+    "infectious_agent": "Klebsiella pneumoniae ssp pneumoniae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Klebsiella pneumoniae ssp pneumoniae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P006",
+    "age": 47,
+    "renal_function": {
+      "creatinine": 1.0
+    },
+    "hepatic_function": {
+      "bilirubin": 0.7,
+      "AST": 25,
+      "ALT": 44
+    },
+    "neutropenia": false,
+    "infection_severity": "severe",
+    "allergy": [],
+    "drug_interactions": [
+      "cefaZOLin 1g",
+      "cefTRIAXone sod 2g"
+    ],
+    "infectious_agent": "Enterobacter cloacae ssp cloacae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Enterobacter cloacae ssp cloacae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P007",
+    "age": 37,
+    "renal_function": {
+      "creatinine": 1.1
+    },
+    "hepatic_function": {
+      "bilirubin": 0.7,
+      "AST": 44,
+      "ALT": 35
+    },
+    "neutropenia": true,
+    "infection_severity": "mild",
+    "allergy": [
+      "Tazoferan(R) 4.5g"
+    ],
+    "drug_interactions": [
+      "Tazoferan(R) 4.5g",
+      "Meropenem 500mg"
+    ],
+    "infectious_agent": "Enterobacter cloacae ssp cloacae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Enterobacter cloacae ssp cloacae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P008",
+    "age": 75,
+    "renal_function": {
+      "creatinine": 1.6
+    },
+    "hepatic_function": {
+      "bilirubin": 0.6,
+      "AST": 70,
+      "ALT": 52
+    },
+    "neutropenia": true,
+    "infection_severity": "mild",
+    "allergy": [
+      "cefePIMe 1g",
+      "Meropenem 500mg"
+    ],
+    "drug_interactions": [
+      "Tazoferan(R) 4.5g"
+    ],
+    "infectious_agent": "Enterobacter cloacae ssp cloacae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Enterobacter cloacae ssp cloacae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P009",
+    "age": 70,
+    "renal_function": {
+      "creatinine": 2.7
+    },
+    "hepatic_function": {
+      "bilirubin": 2.3,
+      "AST": 39,
+      "ALT": 31
+    },
+    "neutropenia": true,
+    "infection_severity": "moderate",
+    "allergy": [
+      "cefePIMe 1g",
+      "Azithromycin 250mg"
+    ],
+    "drug_interactions": [],
+    "infectious_agent": "Enterobacter cloacae ssp cloacae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Enterobacter cloacae ssp cloacae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P010",
+    "age": 77,
+    "renal_function": {
+      "creatinine": 3.4
+    },
+    "hepatic_function": {
+      "bilirubin": 1.3,
+      "AST": 58,
+      "ALT": 30
+    },
+    "neutropenia": true,
+    "infection_severity": "moderate",
+    "allergy": [
+      "Amoxclan duo(R) 437.5mg/62.5mg",
+      "cefaZOLin 1g"
+    ],
+    "drug_interactions": [
+      "cefePIMe 1g",
+      "Meropenem 500mg"
+    ],
+    "infectious_agent": "Enterobacter cloacae ssp cloacae",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Enterobacter cloacae ssp cloacae": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "R",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "R",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P011",
+    "age": 89,
+    "renal_function": {
+      "creatinine": 3.2
+    },
+    "hepatic_function": {
+      "bilirubin": 0.4,
+      "AST": 41,
+      "ALT": 54
+    },
+    "neutropenia": true,
+    "infection_severity": "moderate",
+    "allergy": [
+      "Azithromycin 250mg",
+      "Meropenem 500mg"
+    ],
+    "drug_interactions": [
+      "cefePIMe 1g"
+    ],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P012",
+    "age": 53,
+    "renal_function": {
+      "creatinine": 3.4
+    },
+    "hepatic_function": {
+      "bilirubin": 0.6,
+      "AST": 51,
+      "ALT": 60
+    },
+    "neutropenia": true,
+    "infection_severity": "sepsis",
+    "allergy": [
+      "cefaZOLin 1g"
+    ],
+    "drug_interactions": [
+      "Amoxclan duo(R) 437.5mg/62.5mg",
+      "Tazoferan(R) 4.5g"
+    ],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P013",
+    "age": 34,
+    "renal_function": {
+      "creatinine": 1.5
+    },
+    "hepatic_function": {
+      "bilirubin": 1.1,
+      "AST": 64,
+      "ALT": 76
+    },
+    "neutropenia": true,
+    "infection_severity": "sepsis",
+    "allergy": [
+      "Azithromycin 250mg",
+      "Tazoferan(R) 4.5g"
+    ],
+    "drug_interactions": [],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P014",
+    "age": 78,
+    "renal_function": {
+      "creatinine": 3.0
+    },
+    "hepatic_function": {
+      "bilirubin": 0.7,
+      "AST": 49,
+      "ALT": 19
+    },
+    "neutropenia": false,
+    "infection_severity": "mild",
+    "allergy": [],
+    "drug_interactions": [
+      "cefaZOLin 1g",
+      "Meropenem 500mg"
+    ],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P015",
+    "age": 86,
+    "renal_function": {
+      "creatinine": 0.8
+    },
+    "hepatic_function": {
+      "bilirubin": 0.8,
+      "AST": 64,
+      "ALT": 27
+    },
+    "neutropenia": true,
+    "infection_severity": "septic_shock",
+    "allergy": [
+      "Tazoferan(R) 4.5g",
+      "cefTRIAXone sod 2g"
+    ],
+    "drug_interactions": [],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P016",
+    "age": 33,
+    "renal_function": {
+      "creatinine": 0.8
+    },
+    "hepatic_function": {
+      "bilirubin": 2.5,
+      "AST": 65,
+      "ALT": 55
+    },
+    "neutropenia": false,
+    "infection_severity": "moderate",
+    "allergy": [
+      "cefaZOLin 1g",
+      "Tazoferan(R) 4.5g"
+    ],
+    "drug_interactions": [
+      "Meropenem 500mg",
+      "cefePIMe 1g"
+    ],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P017",
+    "age": 42,
+    "renal_function": {
+      "creatinine": 2.0
+    },
+    "hepatic_function": {
+      "bilirubin": 1.4,
+      "AST": 68,
+      "ALT": 55
+    },
+    "neutropenia": false,
+    "infection_severity": "moderate",
+    "allergy": [],
+    "drug_interactions": [
+      "Amoxclan duo(R) 437.5mg/62.5mg",
+      "Tazoferan(R) 4.5g"
+    ],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P018",
+    "age": 53,
+    "renal_function": {
+      "creatinine": 1.0
+    },
+    "hepatic_function": {
+      "bilirubin": 1.2,
+      "AST": 26,
+      "ALT": 70
+    },
+    "neutropenia": false,
+    "infection_severity": "mild",
+    "allergy": [],
+    "drug_interactions": [
+      "Amoxclan duo(R) 437.5mg/62.5mg"
+    ],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P019",
+    "age": 67,
+    "renal_function": {
+      "creatinine": 1.8
+    },
+    "hepatic_function": {
+      "bilirubin": 1.3,
+      "AST": 37,
+      "ALT": 50
+    },
+    "neutropenia": false,
+    "infection_severity": "severe",
+    "allergy": [],
+    "drug_interactions": [],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  },
+  {
+    "patient_id": "P020",
+    "age": 22,
+    "renal_function": {
+      "creatinine": 2.8
+    },
+    "hepatic_function": {
+      "bilirubin": 1.1,
+      "AST": 72,
+      "ALT": 78
+    },
+    "neutropenia": false,
+    "infection_severity": "sepsis",
+    "allergy": [],
+    "drug_interactions": [
+      "cefaZOLin 1g"
+    ],
+    "infectious_agent": "Escherichia coli",
+    "gram_status": "gram_negative",
+    "susceptibility": {
+      "Escherichia coli": {
+        "Amoxclan duo(R) 437.5mg/62.5mg": "S",
+        "Tazoferan(R) 4.5g": "S",
+        "cefaZOLin 1g": "S",
+        "cefePIMe 1g": "S"
+      }
+    }
+  }
+]
