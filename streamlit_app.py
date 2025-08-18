@@ -5,8 +5,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 import os
-# ---- 데이터 로딩 ----
 
+# One-hot encoding 매핑 (0~25 -> 0~14)
+score2onehot = {
+    0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 8: 7, 9: 8,
+    10: 9, 12: 10, 15: 11, 16: 12, 20: 13, 25: 14
+}
+
+def get_onehot(score):
+    return score2onehot.get(score, 0)
+
+# ---- 데이터 로딩 ----
 with open("Patient Example.json", "r", encoding="utf-8") as f:
     patients = json.load(f)
 
@@ -23,36 +32,30 @@ abx_nodes = [
 
 # 그람 양성/음성 적용 범위
 abx_to_gram = {
-    "Tazoferan(R) 4.5g": ["gram_positive", "gram_negative"],  # 광범위
-    "cefaZOLin 1g": ["gram_positive"],                        # 주로 MSSA, 일부 GN
-    "Azithromycin 250mg": ["gram_positive"],                  # 주로 GP, 비정형균
-    "cefTRIAXone sod 2g": ["gram_negative"],                   # 일부 GP 커버 가능하나 주 대상은 GN
-    "cefePIMe 1g": ["gram_negative"],                          # GN 위주, P.aeruginosa 포함
-    "Amoxclan duo(R) 437.5mg/62.5mg": ["gram_positive", "gram_negative"],  # 광범위, E.faecalis 포함
-    "Meropenem 500mg": ["gram_positive", "gram_negative"]      # 광범위, ESBL 포함
+    "Tazoferan(R) 4.5g": ["gram_positive", "gram_negative"],
+    "cefaZOLin 1g": ["gram_positive"],
+    "Azithromycin 250mg": ["gram_positive"],
+    "cefTRIAXone sod 2g": ["gram_negative"],
+    "cefePIMe 1g": ["gram_negative"],
+    "Amoxclan duo(R) 437.5mg/62.5mg": ["gram_positive", "gram_negative"],
+    "Meropenem 500mg": ["gram_positive", "gram_negative"]
 }
 
-# 나이·신기능 관련 위험 점수 (임상적 감안)
+# 나이·신기능·간기능 관련 위험 점수 (임상적 감안, 0~5 범위)
 abx_risk = {
-    "Tazoferan(R) 4.5g": {"age": 2, "creatinine": 2},
-    "cefaZOLin 1g": {"age": 1, "creatinine": 1},
-    "Azithromycin 250mg": {"age": 1, "creatinine": 0},
-    "cefTRIAXone sod 2g": {"age": 1, "creatinine": 1},
-    "cefePIMe 1g": {"age": 2, "creatinine": 3},
-    "Amoxclan duo(R) 437.5mg/62.5mg": {"age": 1, "creatinine": 1},
-    "Meropenem 500mg": {"age": 1, "creatinine": 2}
+    "Tazoferan(R) 4.5g": {"age": 3, "creatinine": 4, "hepatic": 2},
+    "cefaZOLin 1g": {"age": 2, "creatinine": 3, "hepatic": 1},
+    "Azithromycin 250mg": {"age": 1, "creatinine": 0, "hepatic": 3},
+    "cefTRIAXone sod 2g": {"age": 2, "creatinine": 1, "hepatic": 3},
+    "cefePIMe 1g": {"age": 3, "creatinine": 5, "hepatic": 1},
+    "Amoxclan duo(R) 437.5mg/62.5mg": {"age": 1, "creatinine": 3, "hepatic": 4},
+    "Meropenem 500mg": {"age": 2, "creatinine": 4, "hepatic": 2}
 }
 
-
-score2onehot = {
-    1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 8:7, 9:8,
-    10:9, 12:10, 15:11, 16:12, 20:13, 25:14
-}
-def get_onehot(score):
-    return score2onehot.get(score, 0)
 def get_status_score(patient):
     age = patient.get('age', 0)
     creat = patient.get('renal_function', {}).get('creatinine', 0)
+    bili = patient.get('hepatic_function', {}).get('bilirubin', 0)
     if   age <= 10:        age_score = 1
     elif age <= 30:        age_score = 2
     elif age <= 50:        age_score = 3
@@ -63,10 +66,15 @@ def get_status_score(patient):
     elif creat <= 1.8:     creat_score = 3
     elif creat <= 2.3:     creat_score = 4
     else:                  creat_score = 5
-    return age_score, creat_score
+    if   bili <= 0.9:      hepatic_score = 1
+    elif bili <= 1.2:      hepatic_score = 2
+    elif bili <= 1.8:      hepatic_score = 3
+    elif bili <= 2.3:      hepatic_score = 4
+    else:                  hepatic_score = 5
+    return age_score, creat_score, hepatic_score
 
 gram_nodes = ['gram_positive', 'gram_negative']
-state_nodes = ['extreme_age', 'extreme_creatinine']
+state_nodes = ['extreme_age', 'extreme_creatinine', 'extreme_hepatic']
 KG = nx.DiGraph()
 KG.add_nodes_from(gram_nodes, bipartite=0)
 KG.add_nodes_from(state_nodes, bipartite=2)
@@ -79,14 +87,18 @@ for abx, risk in abx_risk.items():
         KG.add_edge(abx, 'extreme_age', relation='is_toxic_to')
     if risk['creatinine'] >= 4:
         KG.add_edge(abx, 'extreme_creatinine', relation='is_toxic_to')
+    if risk['hepatic'] >= 4:
+        KG.add_edge(abx, 'extreme_hepatic', relation='is_toxic_to')
 
 def get_patient_states(patient):
-    age_score, creat_score = get_status_score(patient)
+    age_score, creat_score, hepatic_score = get_status_score(patient)
     states = []
     if age_score >= 4:
         states.append("extreme_age")
     if creat_score >= 4:
         states.append("extreme_creatinine")
+    if hepatic_score >= 4:
+        states.append("extreme_hepatic")
     return states
 
 def recommend_antibiotics(patient):
@@ -101,7 +113,7 @@ def recommend_antibiotics(patient):
     patient_states = get_patient_states(patient)
     state_str = ", ".join(patient_states) if patient_states else "없음"
     log.append("━━━━━━━━━━━━━━━━━━━━━━━")
-    log.append(f"🔍 극도의 신기능 저하/고령 필터링: {state_str}")
+    log.append(f"🔍 극도의 신기능 저하/고령/간기능 저하 필터링: {state_str}")
     log.append("━━━━━━━━━━━━━━━━━━━━━━━\n")
 
     # 1단계: Gram + 상태 기반 후보
@@ -173,35 +185,43 @@ def recommend_antibiotics(patient):
         log.append("    (추천 항생제 없음)")
     log.append("")
 
-    # Toxicity Score 요약 (항생제별)
-    age_score, creat_score = get_status_score(patient)
+    # Toxicity Score 요약 (항생제별, one-hot encoded to 0~14)
+    age_score, creat_score, hepatic_score = get_status_score(patient)
     tox_info = ["━━━━━━━━━━━━━━━━━━━━━━━", "💊 [항생제 Toxicity Score]"]
     for abx in filtered2:
         a_risk = abx_risk[abx]['age']
         c_risk = abx_risk[abx]['creatinine']
-        age_tox = get_onehot(age_score * a_risk)
-        creat_tox = get_onehot(creat_score * c_risk)
-        tox_info.append(f"  · {abx:12}: age({age_score}×{a_risk})={age_score*a_risk}->{age_tox}  /  cr({creat_score}×{c_risk})={creat_score*c_risk}->{creat_tox}")
+        h_risk = abx_risk[abx]['hepatic']
+        age_raw = age_score * a_risk
+        creat_raw = creat_score * c_risk
+        hepatic_raw = hepatic_score * h_risk
+        age_tox = get_onehot(age_raw)
+        creat_tox = get_onehot(creat_raw)
+        hepatic_tox = get_onehot(hepatic_raw)
+        tox_info.append(f"  · {abx:12}: age({age_score}×{a_risk})={age_raw}→{age_tox}  /  cr({creat_score}×{c_risk})={creat_raw}→{creat_tox}  /  hep({hepatic_score}×{h_risk})={hepatic_raw}→{hepatic_tox}")
     log += tox_info + [""]
 
     if filtered2:
-        age_score, creat_score = get_status_score(patient)
+        age_score, creat_score, hepatic_score = get_status_score(patient)
         A_list = []
         C_list = []
+        H_list = []
         for abx in filtered2:
             a_risk = abx_risk[abx]['age']
             c_risk = abx_risk[abx]['creatinine']
+            h_risk = abx_risk[abx]['hepatic']
             A_list.append(get_onehot(age_score * a_risk))
             C_list.append(get_onehot(creat_score * c_risk))
-        data = np.array(list(zip(A_list, C_list)))
-        ideal = data.min(axis=0)
-        anti_ideal = data.max(axis=0)
+            H_list.append(get_onehot(hepatic_score * h_risk))
+        data = np.array(list(zip(A_list, C_list, H_list)))
+        ideal = np.array([0, 0, 0])
+        anti_ideal = np.array([12, 12, 12])
         dist_to_ideal = np.linalg.norm(data - ideal, axis=1)
         dist_to_anti = np.linalg.norm(data - anti_ideal, axis=1)
         Ci = dist_to_anti / (dist_to_ideal + dist_to_anti + 1e-9)
         sorted_idx = np.argsort(-Ci)
         topsis_result = [f"{filtered2[i]} (Ci={Ci[i]:.3f})" for i in sorted_idx]
-        log.append("⭐ [사용가능 항생제 순위추천]")
+        log.append("⭐ [사용가능 항생제 순위추천 (TOPSIS)]")
         for rec in topsis_result:
             log.append(f"  · {rec}")
     else:
@@ -209,8 +229,6 @@ def recommend_antibiotics(patient):
 
     log.append("━━━━━━━━━━━━━━━━━━━━━━━")
     return filtered2, log
-
-
 
 def draw_kg():
     plt.figure(figsize=(10, 4))
@@ -276,7 +294,6 @@ abx_sir = patient['susceptibility'][patient['infectious_agent']]
 df_sir = pd.DataFrame(list(abx_sir.items()), columns=["항생제", "SIR"])
 st.dataframe(df_sir)
 
-
 # 추천 결과/Reasoning Log
 if st.button("항생제 추천/결과 보기"):
     result, log = recommend_antibiotics(patient)
@@ -287,13 +304,5 @@ if st.button("항생제 추천/결과 보기"):
     else:
         st.warning("추천 항생제가 없습니다.")
 
-
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
-
-
-
-
-
-
-
