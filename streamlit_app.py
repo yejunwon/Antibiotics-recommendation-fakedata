@@ -185,6 +185,7 @@ def recommend_antibiotics(patient):
     log += tox_info + [""]
 
     # TOPSIS 종합 순위
+    # TOPSIS 종합 순위
     if filtered2:
         age_score, creat_score = get_status_score(patient)
         A_list = []
@@ -195,21 +196,21 @@ def recommend_antibiotics(patient):
             A_list.append(get_onehot(age_score * a_risk))
             C_list.append(get_onehot(creat_score * c_risk))
         data = np.array(list(zip(A_list, C_list)))
-        ideal = data.min(axis=0)
-        anti_ideal = data.max(axis=0)
+
+        # ✅ 이상/최악해를 고정
+        ideal = np.array([0, 0])       # (0,0)
+        anti_ideal = np.array([12, 12])  # (12,12)
+
         dist_to_ideal = np.linalg.norm(data - ideal, axis=1)
         dist_to_anti = np.linalg.norm(data - anti_ideal, axis=1)
         Ci = dist_to_anti / (dist_to_ideal + dist_to_anti + 1e-9)
+
         sorted_idx = np.argsort(-Ci)
         topsis_result = [f"{filtered2[i]} (Ci={Ci[i]:.3f})" for i in sorted_idx]
         log.append("⭐ [사용가능 항생제 순위추천]")
         for rec in topsis_result:
             log.append(f"  · {rec}")
-    else:
-        log.append("⭐ 추천항생제 없음 알아서 결정")
-    log.append("━━━━━━━━━━━━━━━━━━━━━━━")
 
-    return filtered2, log
 
 def draw_kg():
     plt.figure(figsize=(10, 4))
@@ -289,6 +290,7 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
 
 
 
