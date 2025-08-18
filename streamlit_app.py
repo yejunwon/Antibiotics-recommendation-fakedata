@@ -5,8 +5,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 import os
-# ---- 데이터 로딩 ----
 
+# One-hot encoding 매핑 (0~25 -> 0~14)
+score2onehot = {
+    0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 8: 7, 9: 8,
+    10: 9, 12: 10, 15: 11, 16: 12, 20: 13, 25: 14
+}
+
+def get_onehot(score):
+    return score2onehot.get(score, 0)
+
+# ---- 데이터 로딩 ----
 with open("Patient Example.json", "r", encoding="utf-8") as f:
     patients = json.load(f)
 
@@ -23,13 +32,13 @@ abx_nodes = [
 
 # 그람 양성/음성 적용 범위
 abx_to_gram = {
-    "Tazoferan(R) 4.5g": ["gram_positive", "gram_negative"],  # 광범위
-    "cefaZOLin 1g": ["gram_positive"],                        # 주로 MSSA, 일부 GN
-    "Azithromycin 250mg": ["gram_positive"],                  # 주로 GP, 비정형균
-    "cefTRIAXone sod 2g": ["gram_negative"],                   # 일부 GP 커버 가능하나 주 대상은 GN
-    "cefePIMe 1g": ["gram_negative"],                          # GN 위주, P.aeruginosa 포함
-    "Amoxclan duo(R) 437.5mg/62.5mg": ["gram_positive", "gram_negative"],  # 광범위, E.faecalis 포함
-    "Meropenem 500mg": ["gram_positive", "gram_negative"]      # 광범위, ESBL 포함
+    "Tazoferan(R) 4.5g": ["gram_positive", "gram_negative"],
+    "cefaZOLin 1g": ["gram_positive"],
+    "Azithromycin 250mg": ["gram_positive"],
+    "cefTRIAXone sod 2g": ["gram_negative"],
+    "cefePIMe 1g": ["gram_negative"],
+    "Amoxclan duo(R) 437.5mg/62.5mg": ["gram_positive", "gram_negative"],
+    "Meropenem 500mg": ["gram_positive", "gram_negative"]
 }
 
 # 나이·신기능·간기능 관련 위험 점수 (임상적 감안, 0~5 범위)
@@ -176,7 +185,7 @@ def recommend_antibiotics(patient):
         log.append("    (추천 항생제 없음)")
     log.append("")
 
-    # Toxicity Score 요약 (항생제별, scaled to 0~12)
+    # Toxicity Score 요약 (항생제별, one-hot encoded to 0~14)
     age_score, creat_score, hepatic_score = get_status_score(patient)
     tox_info = ["━━━━━━━━━━━━━━━━━━━━━━━", "💊 [항생제 Toxicity Score]"]
     for abx in filtered2:
@@ -186,10 +195,10 @@ def recommend_antibiotics(patient):
         age_raw = age_score * a_risk
         creat_raw = creat_score * c_risk
         hepatic_raw = hepatic_score * h_risk
-        age_tox = age_raw * 12 / 25.0
-        creat_tox = creat_raw * 12 / 25.0
-        hepatic_tox = hepatic_raw * 12 / 25.0
-        tox_info.append(f"  · {abx:12}: age({age_score}×{a_risk})={age_raw}→{age_tox:.1f}  /  cr({creat_score}×{c_risk})={creat_raw}→{creat_tox:.1f}  /  hep({hepatic_score}×{h_risk})={hepatic_raw}→{hepatic_tox:.1f}")
+        age_tox = get_onehot(age_raw)
+        creat_tox = get_onehot(creat_raw)
+        hepatic_tox = get_onehot(hepatic_raw)
+        tox_info.append(f"  · {abx:12}: age({age_score}×{a_risk})={age_raw}→{age_tox}  /  cr({creat_score}×{c_risk})={creat_raw}→{creat_tox}  /  hep({hepatic_score}×{h_risk})={hepatic_raw}→{hepatic_tox}")
     log += tox_info + [""]
 
     if filtered2:
@@ -201,9 +210,9 @@ def recommend_antibiotics(patient):
             a_risk = abx_risk[abx]['age']
             c_risk = abx_risk[abx]['creatinine']
             h_risk = abx_risk[abx]['hepatic']
-            A_list.append((age_score * a_risk) * 12 / 25.0)
-            C_list.append((creat_score * c_risk) * 12 / 25.0)
-            H_list.append((hepatic_score * h_risk) * 12 / 25.0)
+            A_list.append(get_onehot(age_score * a_risk))
+            C_list.append(get_onehot(creat_score * c_risk))
+            H_list.append(get_onehot(hepatic_score * h_risk))
         data = np.array(list(zip(A_list, C_list, H_list)))
         ideal = np.array([0, 0, 0])
         anti_ideal = np.array([12, 12, 12])
@@ -220,8 +229,6 @@ def recommend_antibiotics(patient):
 
     log.append("━━━━━━━━━━━━━━━━━━━━━━━")
     return filtered2, log
-
-
 
 def draw_kg():
     plt.figure(figsize=(10, 4))
@@ -287,7 +294,6 @@ abx_sir = patient['susceptibility'][patient['infectious_agent']]
 df_sir = pd.DataFrame(list(abx_sir.items()), columns=["항생제", "SIR"])
 st.dataframe(df_sir)
 
-
 # 추천 결과/Reasoning Log
 if st.button("항생제 추천/결과 보기"):
     result, log = recommend_antibiotics(patient)
@@ -297,7 +303,6 @@ if st.button("항생제 추천/결과 보기"):
             st.markdown(f"- 💊 **{abx}**")
     else:
         st.warning("추천 항생제가 없습니다.")
-
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
