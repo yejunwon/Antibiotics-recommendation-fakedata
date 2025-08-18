@@ -170,7 +170,7 @@ def recommend_antibiotics(patient):
             eliminated_state.append(f"  · {abx} (is_toxic_to: {', '.join(toxic_reasons)})")
         else:
             candidates.append(abx)
-    log.append("🔹 1단계: Gram+상태 기반 후보\n" + ("    " + ", ".join(candidates) if candidates else "    없음"))
+    log.append("🔹 1단계: Gram 상태 기반 후보\n" + ("    " + ", ".join(candidates) if candidates else "    없음"))
     if eliminated_state:
         log.append("  ⮩ [제외 항목]\n" + "\n".join(eliminated_state))
     log.append("")
@@ -332,3 +332,4 @@ if st.button("항생제 추천/결과 보기"):
 
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
+
