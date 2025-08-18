@@ -32,15 +32,15 @@ abx_to_gram = {
     "Meropenem 500mg": ["gram_positive", "gram_negative"]      # 광범위, ESBL 포함
 }
 
-# 나이·신기능·간기능 관련 위험 점수 (임상적 감안, 0~3 범위)
+# 나이·신기능·간기능 관련 위험 점수 (임상적 감안, 0~5 범위)
 abx_risk = {
-    "Tazoferan(R) 4.5g": {"age": 2, "creatinine": 2, "hepatic": 1},
-    "cefaZOLin 1g": {"age": 1, "creatinine": 1, "hepatic": 1},
-    "Azithromycin 250mg": {"age": 1, "creatinine": 0, "hepatic": 1},
-    "cefTRIAXone sod 2g": {"age": 1, "creatinine": 1, "hepatic": 2},
-    "cefePIMe 1g": {"age": 2, "creatinine": 3, "hepatic": 2},
-    "Amoxclan duo(R) 437.5mg/62.5mg": {"age": 1, "creatinine": 1, "hepatic": 1},
-    "Meropenem 500mg": {"age": 1, "creatinine": 2, "hepatic": 3}
+    "Tazoferan(R) 4.5g": {"age": 3, "creatinine": 4, "hepatic": 2},
+    "cefaZOLin 1g": {"age": 2, "creatinine": 3, "hepatic": 1},
+    "Azithromycin 250mg": {"age": 1, "creatinine": 0, "hepatic": 3},
+    "cefTRIAXone sod 2g": {"age": 2, "creatinine": 1, "hepatic": 3},
+    "cefePIMe 1g": {"age": 3, "creatinine": 5, "hepatic": 1},
+    "Amoxclan duo(R) 437.5mg/62.5mg": {"age": 1, "creatinine": 3, "hepatic": 4},
+    "Meropenem 500mg": {"age": 2, "creatinine": 4, "hepatic": 2}
 }
 
 def get_status_score(patient):
@@ -74,11 +74,11 @@ for abx, grams in abx_to_gram.items():
     for gram in grams:
         KG.add_edge(abx, gram, relation='effective_against')
 for abx, risk in abx_risk.items():
-    if risk['age'] >= 3:  # threshold 조정 (max 3이므로 >=3으로 extreme)
+    if risk['age'] >= 4:
         KG.add_edge(abx, 'extreme_age', relation='is_toxic_to')
-    if risk['creatinine'] >= 3:
+    if risk['creatinine'] >= 4:
         KG.add_edge(abx, 'extreme_creatinine', relation='is_toxic_to')
-    if risk['hepatic'] >= 3:
+    if risk['hepatic'] >= 4:
         KG.add_edge(abx, 'extreme_hepatic', relation='is_toxic_to')
 
 def get_patient_states(patient):
@@ -176,17 +176,20 @@ def recommend_antibiotics(patient):
         log.append("    (추천 항생제 없음)")
     log.append("")
 
-    # Toxicity Score 요약 (항생제별, 0~12 범위)
+    # Toxicity Score 요약 (항생제별, scaled to 0~12)
     age_score, creat_score, hepatic_score = get_status_score(patient)
     tox_info = ["━━━━━━━━━━━━━━━━━━━━━━━", "💊 [항생제 Toxicity Score]"]
     for abx in filtered2:
         a_risk = abx_risk[abx]['age']
         c_risk = abx_risk[abx]['creatinine']
         h_risk = abx_risk[abx]['hepatic']
-        age_tox = (age_score - 1) * a_risk
-        creat_tox = (creat_score - 1) * c_risk
-        hepatic_tox = (hepatic_score - 1) * h_risk
-        tox_info.append(f"  · {abx:12}: age({age_score-1}×{a_risk})={age_tox}  /  cr({creat_score-1}×{c_risk})={creat_tox}  /  hep({hepatic_score-1}×{h_risk})={hepatic_tox}")
+        age_raw = age_score * a_risk
+        creat_raw = creat_score * c_risk
+        hepatic_raw = hepatic_score * h_risk
+        age_tox = age_raw * 12 / 25.0
+        creat_tox = creat_raw * 12 / 25.0
+        hepatic_tox = hepatic_raw * 12 / 25.0
+        tox_info.append(f"  · {abx:12}: age({age_score}×{a_risk})={age_raw}→{age_tox:.1f}  /  cr({creat_score}×{c_risk})={creat_raw}→{creat_tox:.1f}  /  hep({hepatic_score}×{h_risk})={hepatic_raw}→{hepatic_tox:.1f}")
     log += tox_info + [""]
 
     if filtered2:
@@ -198,9 +201,9 @@ def recommend_antibiotics(patient):
             a_risk = abx_risk[abx]['age']
             c_risk = abx_risk[abx]['creatinine']
             h_risk = abx_risk[abx]['hepatic']
-            A_list.append((age_score - 1) * a_risk)
-            C_list.append((creat_score - 1) * c_risk)
-            H_list.append((hepatic_score - 1) * h_risk)
+            A_list.append((age_score * a_risk) * 12 / 25.0)
+            C_list.append((creat_score * c_risk) * 12 / 25.0)
+            H_list.append((hepatic_score * h_risk) * 12 / 25.0)
         data = np.array(list(zip(A_list, C_list, H_list)))
         ideal = np.array([0, 0, 0])
         anti_ideal = np.array([12, 12, 12])
