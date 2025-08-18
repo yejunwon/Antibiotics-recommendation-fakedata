@@ -3,10 +3,10 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
-import json
 import os
-# ---- 데이터 로딩 ----
+import pandas as pd
 
+# ---- 데이터 로딩 ----
 with open("Patient Example.json", "r", encoding="utf-8") as f:
     patients = json.load(f)
 
@@ -26,30 +26,77 @@ abx_to_gram = {
     "Tazoferan(R) 4.5g": ["gram_positive", "gram_negative"],  # 광범위
     "cefaZOLin 1g": ["gram_positive"],                        # 주로 MSSA, 일부 GN
     "Azithromycin 250mg": ["gram_positive"],                  # 주로 GP, 비정형균
-    "cefTRIAXone sod 2g": ["gram_negative"],                   # 일부 GP 커버 가능하나 주 대상은 GN
-    "cefePIMe 1g": ["gram_negative"],                          # GN 위주, P.aeruginosa 포함
+    "cefTRIAXone sod 2g": ["gram_negative"],                  # 일부 GP 커버 가능하나 주 대상은 GN
+    "cefePIMe 1g": ["gram_negative"],                         # GN 위주, P.aeruginosa 포함
     "Amoxclan duo(R) 437.5mg/62.5mg": ["gram_positive", "gram_negative"],  # 광범위, E.faecalis 포함
-    "Meropenem 500mg": ["gram_positive", "gram_negative"]      # 광범위, ESBL 포함
+    "Meropenem 500mg": ["gram_positive", "gram_negative"]     # 광범위, ESBL 포함
 }
 
-# 나이·신기능 관련 위험 점수 (임상적 감안)
+# 항생제별 독성 가중치(배수). 1.0 = 기준, >1.0 = 더 위험, <1.0 = 상대적으로 안전
+# (임상 상식 기반의 예시값. 니 환경에 맞게 쉽게 조정 가능)
 abx_risk = {
-    "Tazoferan(R) 4.5g": {"age": 2, "creatinine": 2},
-    "cefaZOLin 1g": {"age": 1, "creatinine": 1},
-    "Azithromycin 250mg": {"age": 1, "creatinine": 0},
-    "cefTRIAXone sod 2g": {"age": 1, "creatinine": 1},
-    "cefePIMe 1g": {"age": 2, "creatinine": 3},
-    "Amoxclan duo(R) 437.5mg/62.5mg": {"age": 1, "creatinine": 1},
-    "Meropenem 500mg": {"age": 1, "creatinine": 2}
+    "Tazoferan(R) 4.5g": {"age": 1.0, "renal": 1.1, "hepatic": 1.0},
+    "cefaZOLin 1g": {"age": 0.9, "renal": 1.0, "hepatic": 0.9},
+    "Azithromycin 250mg": {"age": 0.9, "renal": 0.8, "hepatic": 1.2},   # 간대사 고려
+    "cefTRIAXone sod 2g": {"age": 1.0, "renal": 1.0, "hepatic": 1.1},   # 담즙배설 이슈 고려
+    "cefePIMe 1g": {"age": 1.0, "renal": 1.3, "hepatic": 1.0},          # 신독성 리스크 상대가중
+    "Amoxclan duo(R) 437.5mg/62.5mg": {"age": 1.0, "renal": 1.0, "hepatic": 1.1},
+    "Meropenem 500mg": {"age": 1.0, "renal": 1.2, "hepatic": 1.0}
 }
 
+# === (중요) 0~12 스케일의 환자 기반 baseline toxicity 산출 ===
+# 필요 시 너희 병원 스케일로 컷 수정하면 됨.
+def baseline_age_toxicity(age: int) -> int:
+    # 0~12로 클램프
+    if age <= 30:   return 1
+    if age <= 50:   return 4
+    if age <= 65:   return 7
+    if age <= 75:   return 9
+    if age <= 85:   return 11
+    return 12
 
-score2onehot = {
-    1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 8:7, 9:8,
-    10:9, 12:10, 15:11, 16:12, 20:13, 25:14
-}
-def get_onehot(score):
-    return score2onehot.get(score, 0)
+def baseline_renal_toxicity(creat: float) -> int:
+    # Cr만 있는 예시. eGFR 있으면 그걸로 바꾸는 걸 권장.
+    if creat <= 1.0:    return 2
+    if creat <= 1.5:    return 4
+    if creat <= 2.0:    return 7
+    if creat <= 3.0:    return 9
+    return 12
+
+def baseline_hepatic_toxicity(bili: float, ast: float=None, alt: float=None) -> int:
+    # 단순 Bilirubin 중심 예시. AST/ALT 유무에 따라 강화 가능.
+    score = 0
+    if bili <= 1.2:     score = 2
+    elif bili <= 2.0:   score = 5
+    elif bili <= 3.0:   score = 8
+    else:               score = 12
+    # AST/ALT가 많이 높으면 약간 가산 (선택)
+    if ast is not None and alt is not None:
+        if ast > 100 or alt > 100:
+            score = min(12, score + 2)
+    return score
+
+def patient_baseline_toxicity(patient):
+    age = patient.get('age', 0)
+    creat = patient.get('renal_function', {}).get('creatinine', 0.0)
+    bili = patient.get('hepatic_function', {}).get('bilirubin', 0.0)
+    ast = patient.get('hepatic_function', {}).get('AST', None)
+    alt = patient.get('hepatic_function', {}).get('ALT', None)
+    return {
+        "age": baseline_age_toxicity(age),
+        "renal": baseline_renal_toxicity(creat),
+        "hepatic": baseline_hepatic_toxicity(bili, ast, alt)
+    }
+
+def abx_specific_toxicity(abx: str, base: dict) -> dict:
+    """항생제별 가중치를 곱해 최종 toxicity (각 0~12) 산출"""
+    w = abx_risk[abx]
+    age_tox    = min(12, round(base["age"]    * w["age"]))
+    renal_tox  = min(12, round(base["renal"]  * w["renal"]))
+    hepatic_tox= min(12, round(base["hepatic"]* w["hepatic"]))
+    return {"age": age_tox, "renal": renal_tox, "hepatic": hepatic_tox}
+
+# === (기존) 상태 필터용 간단 스코어 ===
 def get_status_score(patient):
     age = patient.get('age', 0)
     creat = patient.get('renal_function', {}).get('creatinine', 0)
@@ -71,13 +118,16 @@ KG = nx.DiGraph()
 KG.add_nodes_from(gram_nodes, bipartite=0)
 KG.add_nodes_from(state_nodes, bipartite=2)
 KG.add_nodes_from(abx_nodes, bipartite=1)
+
 for abx, grams in abx_to_gram.items():
     for gram in grams:
         KG.add_edge(abx, gram, relation='effective_against')
+
+# 상태(극단값)용 간단 엣지
 for abx, risk in abx_risk.items():
-    if risk['age'] >= 4:
+    if risk['age'] >= 1.2:         # 가중치로 간접 판정
         KG.add_edge(abx, 'extreme_age', relation='is_toxic_to')
-    if risk['creatinine'] >= 4:
+    if risk['renal'] >= 1.2:
         KG.add_edge(abx, 'extreme_creatinine', relation='is_toxic_to')
 
 def get_patient_states(patient):
@@ -164,8 +214,8 @@ def recommend_antibiotics(patient):
         log.append("    제외 없음")
     log.append("")
 
-    # 4단계: 최종 추천
-    log.append("🔹 4단계: 최종 추천")
+    # 4단계: 최종 후보 나열
+    log.append("🔹 4단계: 최종 후보")
     if filtered2:
         for abx in filtered2:
             log.append(f"  · {abx}")
@@ -173,35 +223,34 @@ def recommend_antibiotics(patient):
         log.append("    (추천 항생제 없음)")
     log.append("")
 
-    # Toxicity Score 요약 (항생제별)
-    age_score, creat_score = get_status_score(patient)
-    tox_info = ["━━━━━━━━━━━━━━━━━━━━━━━", "💊 [항생제 Toxicity Score]"]
-    for abx in filtered2:
-        a_risk = abx_risk[abx]['age']
-        c_risk = abx_risk[abx]['creatinine']
-        age_tox = get_onehot(age_score * a_risk)
-        creat_tox = get_onehot(creat_score * c_risk)
-        tox_info.append(f"  · {abx:12}: age({age_score}×{a_risk})={age_score*a_risk}->{age_tox}  /  cr({creat_score}×{c_risk})={creat_score*c_risk}->{creat_tox}")
-    log += tox_info + [""]
-
+    # ============== Toxicity Score (0~12) & TOPSIS ==============
     if filtered2:
-        age_score, creat_score = get_status_score(patient)
-        A_list = []
-        C_list = []
+        base = patient_baseline_toxicity(patient)
+
+        # 항목별 toxicity 테이블 로그
+        tox_info = ["━━━━━━━━━━━━━━━━━━━━━━━", "💊 [항생제별 Toxicity Score (0~12)]  (낮을수록 좋음)"]
+        abx_tox_map = {}
         for abx in filtered2:
-            a_risk = abx_risk[abx]['age']
-            c_risk = abx_risk[abx]['creatinine']
-            A_list.append(get_onehot(age_score * a_risk))
-            C_list.append(get_onehot(creat_score * c_risk))
-        data = np.array(list(zip(A_list, C_list)))
-        ideal = data.min(axis=0)
-        anti_ideal = data.max(axis=0)
-        dist_to_ideal = np.linalg.norm(data - ideal, axis=1)
-        dist_to_anti = np.linalg.norm(data - anti_ideal, axis=1)
-        Ci = dist_to_anti / (dist_to_ideal + dist_to_anti + 1e-9)
+            tox = abx_specific_toxicity(abx, base)
+            abx_tox_map[abx] = tox
+            tox_info.append(
+                f"  · {abx:12}: Age={tox['age']:>2} / Renal={tox['renal']:>2} / Hepatic={tox['hepatic']:>2}"
+            )
+        log += tox_info + [""]
+
+        # TOPSIS 계산 (이상해 = [0,0,0], 최악해 = [12,12,12])
+        data = np.array([[abx_tox_map[a]['age'], abx_tox_map[a]['renal'], abx_tox_map[a]['hepatic']] for a in filtered2])
+        ideal = np.array([0.0, 0.0, 0.0])
+        worst = np.array([12.0, 12.0, 12.0])
+
+        d_plus  = np.linalg.norm(data - ideal, axis=1)   # 이상해와의 거리 (가까울수록 좋음)
+        d_minus = np.linalg.norm(data - worst, axis=1)   # 최악해와의 거리 (멀수록 좋음)
+        Ci = d_minus / (d_plus + d_minus + 1e-9)
+
         sorted_idx = np.argsort(-Ci)
         topsis_result = [f"{filtered2[i]} (Ci={Ci[i]:.3f})" for i in sorted_idx]
-        log.append("⭐ [사용가능 항생제 순위추천]")
+
+        log.append("⭐ [TOPSIS 기반 순위추천] (이상해=0,0,0 / 최악해=12,12,12)")
         for rec in topsis_result:
             log.append(f"  · {rec}")
     else:
@@ -209,8 +258,6 @@ def recommend_antibiotics(patient):
 
     log.append("━━━━━━━━━━━━━━━━━━━━━━━")
     return filtered2, log
-
-
 
 def draw_kg():
     plt.figure(figsize=(10, 4))
@@ -241,7 +288,7 @@ def draw_kg():
     return plt
 
 # ---- Streamlit 인터페이스 ----
-st.title("↓ 기본환자정보 및 항생제 감수성 정보를 통한 항생제 추천 ↓")
+st.title("↓ 기본환자정보 및 항생제 감수성 정보를 통한 항생제 추천 (TOPSIS+Toxicity 0~12) ↓")
 
 # 환자 선택
 patient_idx = st.selectbox(
@@ -252,48 +299,36 @@ patient_idx = st.selectbox(
 patient = patients[patient_idx]
 
 # 환자 정보 표시 - 표 + 감수성 테이블
-import pandas as pd
-
-# 1. 환자 주요정보 표로 요약
 summary = {
     "ID": patient['patient_id'],
     "연령": patient['age'],
-    "신장수치": patient['renal_function']['creatinine'],
-    "빌리루빈": patient['hepatic_function']['bilirubin'],
+    "신장수치(Cr)": patient['renal_function'].get('creatinine', None),
+    "빌리루빈": patient['hepatic_function'].get('bilirubin', None),
     "감염중증도": patient['infection_severity'],
     "감염균": patient['infectious_agent'],
     "Gram": patient['gram_status'],
-    "중성구감소증": '있음' if patient['neutropenia'] else '없음',
-    "알러지": ", ".join(patient['allergy']) if patient['allergy'] else "-",
-    "Drug Interaction": ", ".join(patient['drug_interactions']) if patient['drug_interactions'] else "-",
+    "중성구감소증": '있음' if patient.get('neutropenia') else '없음',
+    "알러지": ", ".join(patient.get('allergy', [])) if patient.get('allergy') else "-",
+    "Drug Interaction": ", ".join(patient.get('drug_interactions', [])) if patient.get('drug_interactions') else "-",
 }
 st.subheader("환자 정보 요약")
 st.table(pd.DataFrame([summary]))
 
-# 2. 항생제별 감수성 표
+# 항생제별 감수성 표
 st.subheader("항생제별 감수성")
 abx_sir = patient['susceptibility'][patient['infectious_agent']]
 df_sir = pd.DataFrame(list(abx_sir.items()), columns=["항생제", "SIR"])
 st.dataframe(df_sir)
 
-
 # 추천 결과/Reasoning Log
 if st.button("항생제 추천/결과 보기"):
     result, log = recommend_antibiotics(patient)
-    st.subheader("추천 항생제")
+    st.subheader("추천 항생제 (후보)")
     if result:
         for abx in result:
             st.markdown(f"- 💊 **{abx}**")
     else:
         st.warning("추천 항생제가 없습니다.")
 
-
     st.subheader("추천 Reasoning Log")
     st.text("\n".join(log))
-
-
-
-
-
-
-
