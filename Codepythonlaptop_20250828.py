@@ -362,13 +362,13 @@ def get_user_input():
     drug_inter = [d.strip() for d in drug_inter_input.split(",") if d.strip()] if drug_inter_input else []
 
     # 감수성 입력
-    print("\n항생제별 감수성(S, I, R) 입력 (없으면 엔터):")
+    print("\n항생제별 감수성(S, I, R) 입력 (없으면 엔터, 기본값 S):")
     susceptibility = {}
     for abx in abx_nodes:
         print(f"{abx}:")
         sir = input("감수성 (S, I, R 또는 엔터): ").strip().upper()
-        if sir in ["S", "I", "R"]:
-            susceptibility[abx] = sir
+        if sir == "" or sir in ["S", "I", "R"]:
+            susceptibility[abx] = "S" if sir == "" else sir
 
     # 환자 데이터 구성
     patient = {
