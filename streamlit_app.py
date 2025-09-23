@@ -6,6 +6,11 @@ score2onehot = {
     10: 9, 12: 10, 15: 11, 16: 12, 20: 13, 25: 14
 }
 
+# 상수 정의
+CATEGORY_MIN = 1
+CATEGORY_MAX = 5
+MAX_ONEHOT = 14
+
 def get_onehot(score):
     return score2onehot.get(score, 0)
 
@@ -64,14 +69,27 @@ agent_to_gram = {
     "Enterococcus faecium": "gram_positive"
 }
 
+def validate_category(value, field_name):
+    try:
+        val = int(value)
+        if CATEGORY_MIN <= val <= CATEGORY_MAX:
+            return val
+        raise ValueError(f"{field_name}는 {CATEGORY_MIN}~{CATEGORY_MAX} 사이여야 합니다.")
+    except ValueError:
+        raise ValueError(f"{field_name}는 숫자여야 하며 {CATEGORY_MIN}~{CATEGORY_MAX} 사이여야 합니다.")
+
+def validate_antibiotics(input_list, valid_list, field_name):
+    valid_items = [item.strip() for item in input_list if item.strip() in valid_list]
+    if len(valid_items) < len([item for item in input_list if item.strip()]):
+        print(f"경고: 일부 {field_name}가 유효하지 않습니다. 유효한 항목만 포함됩니다.")
+    return valid_items
+
 def get_status_score(age_category, creat_category, hepatic_category):
-    if not (1 <= age_category <= 5):
-        raise ValueError("나이 카테고리는 1~5 사이여야 합니다.")
-    if not (1 <= creat_category <= 5):
-        raise ValueError("신장수치 카테고리는 1~5 사이여야 합니다.")
-    if not (1 <= hepatic_category <= 5):
-        raise ValueError("빌리루빈 카테고리는 1~5 사이여야 합니다.")
-    return age_category, creat_category, hepatic_category
+    return (
+        validate_category(age_category, "나이 카테고리"),
+        validate_category(creat_category, "신장수치 카테고리"),
+        validate_category(hepatic_category, "빌리루빈 카테고리")
+    )
 
 def get_patient_states(age_score, creat_score, hepatic_score):
     states = []
@@ -89,9 +107,9 @@ def recommend_antibiotics(patient):
     allergy = set(patient.get('allergy', []))
     drug_inter = set(patient.get('drug_interactions', []))
     suscept = patient.get('susceptibility', {}).get(agent, {})
-    log = []
+    log = ["━━━━━━━━━━━━━━━━━━━━━━━", f"🔍 환자 상태 요약: {agent} ({gram})"]
 
-    # 0. 환자 상태 요약
+    # 환자 상태
     age_score, creat_score, hepatic_score = get_status_score(
         patient['age_category'], 
         patient['renal_function']['creatinine_category'], 
@@ -99,63 +117,40 @@ def recommend_antibiotics(patient):
     )
     patient_states = get_patient_states(age_score, creat_score, hepatic_score)
     state_str = ", ".join(patient_states) if patient_states else "없음"
-    log.append("━━━━━━━━━━━━━━━━━━━━━━━")
-    log.append(f"🔍 환자 상태 요약")
-    log.append(f"  - 감염균: {agent} ({gram})")
     log.append(f"  - 극도의 상태: {state_str}")
     log.append(f"  - 알러지: {', '.join(allergy) if allergy else '없음'}")
     log.append(f"  - 약물 상호작용: {', '.join(drug_inter) if drug_inter else '없음'}")
-    log.append(f"  - 감수성 데이터: {', '.join([f'{k}: {v}' for k, v in suscept.items()]) if suscept else '없음'}")
-    log.append("━━━━━━━━━━━━━━━━━━━━━━━\n")
+    log.append(f"  - 감수성: {', '.join([f'{k}: {v}' for k, v in suscept.items()]) if suscept else '없음'}")
 
-    # 1단계: Gram 상태 기반 필터링
-    candidates = []
-    eliminated_gram = []
-    for abx in abx_nodes:
-        if gram in abx_to_gram[abx]:
-            candidates.append(abx)
-        else:
-            eliminated_gram.append(f"  · {abx}: {gram}에 효과 없음")
-    log.append("🔹 1단계: Gram 상태 기반 필터링")
-    log.append(f"  - 고려 대상: {', '.join(candidates) if candidates else '없음'}")
-    if eliminated_gram:
-        log.append("  ⮩ [제외 항목]")
-        log.extend(eliminated_gram)
-    else:
-        log.append("  ⮩ [제외 항목]: 없음")
-    log.append("")
+    # 1. Gram 상태 필터링
+    candidates = [abx for abx in abx_nodes if gram in abx_to_gram[abx]]
+    eliminated_gram = [f"  · {abx}: {gram}에 효과 없음" for abx in abx_nodes if abx not in candidates]
+    log.append("🔹 1. Gram 상태 필터링")
+    log.append(f"  - 후보: {', '.join(candidates) if candidates else '없음'}")
+    log.append("  ⮩ [제외]: " + (", ".join(eliminated_gram) if eliminated_gram else "없음"))
 
-    # 2단계: 환자 상태 기반 독성 필터링
+    # 2. 독성 필터링
     filtered = []
     eliminated_state = []
     for abx in candidates:
-        toxic = False
         toxic_reasons = []
         if "extreme_age" in patient_states and abx_risk[abx]['age'] >= 4:
-            toxic = True
             toxic_reasons.append("extreme_age")
         if "extreme_creatinine" in patient_states and abx_risk[abx]['creatinine'] >= 4:
-            toxic = True
             toxic_reasons.append("extreme_creatinine")
         if "extreme_hepatic" in patient_states and abx_risk[abx]['hepatic'] >= 4:
-            toxic = True
             toxic_reasons.append("extreme_hepatic")
-        if toxic:
+        if toxic_reasons:
             eliminated_state.append(f"  · {abx}: 독성 위험 ({', '.join(toxic_reasons)})")
         else:
             filtered.append(abx)
-    log.append("🔹 2단계: 환자 상태 기반 독성 필터링")
-    log.append(f"  - 고려 대상: {', '.join(filtered) if filtered else '없음'}")
-    if eliminated_state:
-        log.append("  ⮩ [제외 항목]")
-        log.extend(eliminated_state)
-    else:
-        log.append("  ⮩ [제외 항목]: 없음")
-    log.append("")
+    log.append("🔹 2. 독성 필터링")
+    log.append(f"  - 후보: {', '.join(filtered) if filtered else '없음'}")
+    log.append("  ⮩ [제외]: " + (", ".join(eliminated_state) if eliminated_state else "없음"))
 
-    # 3단계: 알러지/약물 상호작용 필터링
+    # 3. 알러지/약물 상호작용 필터링
     filtered2 = []
-    eliminated_allergy_inter = []
+    eliminated_allergy = []
     for abx in filtered:
         reasons = []
         if abx in allergy:
@@ -163,195 +158,196 @@ def recommend_antibiotics(patient):
         if abx in drug_inter:
             reasons.append("약물 상호작용")
         if reasons:
-            eliminated_allergy_inter.append(f"  · {abx}: {', '.join(reasons)}")
+            eliminated_allergy.append(f"  · {abx}: {', '.join(reasons)}")
         else:
             filtered2.append(abx)
-    log.append("🔹 3단계: 알러지 및 약물 상호작용 필터링")
-    log.append(f"  - 고려 대상: {', '.join(filtered2) if filtered2 else '없음'}")
-    if eliminated_allergy_inter:
-        log.append("  ⮩ [제외 항목]")
-        log.extend(eliminated_allergy_inter)
-    else:
-        log.append("  ⮩ [제외 항목]: 없음")
-    log.append("")
+    log.append("🔹 3. 알러지/상호작용 필터링")
+    log.append(f"  - 후보: {', '.join(filtered2) if filtered2 else '없음'}")
+    log.append("  ⮩ [제외]: " + (", ".join(eliminated_allergy) if eliminated_allergy else "없음"))
 
-    # 4단계: 감수성(S) 필터링, 없으면 I 고려
+    # 4. 감수성 필터링
     final_candidates = []
     eliminated_suscept = []
     for abx in filtered2:
         if suscept.get(abx, None) == "S":
             final_candidates.append(abx)
         else:
-            eliminated_suscept.append(f"  · {abx}: 감수성 미달 (S 아님, 현재: {suscept.get(abx, '없음')})")
+            eliminated_suscept.append(f"  · {abx}: 감수성 미달 ({suscept.get(abx, '없음')})")
     if not final_candidates:
         for abx in filtered2:
             if suscept.get(abx, None) == "I":
                 final_candidates.append(abx)
                 log.append(f"  · {abx}: 감수성 I (S 없으므로 포함)")
             else:
-                eliminated_suscept.append(f"  · {abx}: 감수성 미달 (S/I 아님, 현재: {suscept.get(abx, '없음')})")
-    log.append("🔹 4단계: 감수성(S 또는 I) 필터링")
+                eliminated_suscept.append(f"  · {abx}: 감수성 미달 ({suscept.get(abx, '없음')})")
+    log.append("🔹 4. 감수성 필터링")
     log.append(f"  - 최종 후보: {', '.join(final_candidates) if final_candidates else '없음'}")
-    if eliminated_suscept:
-        log.append("  ⮩ [제외 항목]")
-        log.extend(eliminated_suscept)
-    else:
-        log.append("  ⮩ [제외 항목]: 없음")
-    log.append("")
+    log.append("  ⮩ [제외]: " + (", ".join(eliminated_suscept) if eliminated_suscept else "없음"))
 
-    # 5단계: 최종 추천
-    log.append("🔹 5단계: 최종 추천 항생제")
+    # 5. TOPSIS 순위 계산
     if final_candidates:
-        for abx in final_candidates:
-            log.append(f"  · {abx}")
-    else:
-        log.append("  ⚠ 추천 항생제 없음")
-    log.append("")
-
-    # Toxicity Score 계산 및 로그
-    tox_info = ["━━━━━━━━━━━━━━━━━━━━━━━", "💊 항생제 Toxicity Score"]
-    tox_info.append(f"  - 환자 점수: 나이={age_score}, 신장={creat_score}, 간기능={hepatic_score}")
-    for abx in final_candidates:
-        a_risk = abx_risk[abx]['age']
-        c_risk = abx_risk[abx]['creatinine']
-        h_risk = abx_risk[abx]['hepatic']
-        age_raw = age_score * a_risk
-        creat_raw = creat_score * c_risk
-        hepatic_raw = hepatic_score * h_risk
-        age_tox = get_onehot(age_raw)
-        creat_tox = get_onehot(creat_raw)
-        hepatic_tox = get_onehot(hepatic_raw)
-        tox_info.append(f"  · {abx:12}:")
-        tox_info.append(f"     - 나이: {age_score} × {a_risk} = {age_raw} → one-hot: {age_tox}")
-        tox_info.append(f"     - 신장: {creat_score} × {c_risk} = {creat_raw} → one-hot: {creat_tox}")
-        tox_info.append(f"     - 간기능: {hepatic_score} × {h_risk} = {hepatic_raw} → one-hot: {hepatic_tox}")
-    log += tox_info + [""]
-
-    # TOPSIS 순위 계산 및 로그
-    if final_candidates:
-        log.append("🔹 TOPSIS 부작용 순위 계산")
-        A_list, C_list, H_list = [], [], []
-        for abx in final_candidates:
-            a_risk = abx_risk[abx]['age']
-            c_risk = abx_risk[abx]['creatinine']
-            h_risk = abx_risk[abx]['hepatic']
-            A_list.append(get_onehot(age_score * a_risk))
-            C_list.append(get_onehot(creat_score * c_risk))
-            H_list.append(get_onehot(hepatic_score * h_risk))
-        data = np.array(list(zip(A_list, C_list, H_list)))
-        log.append("  - 점수 배열:")
-        for i, abx in enumerate(final_candidates):
-            log.append(f"    · {abx}: [나이={data[i,0]}, 신장={data[i,1]}, 간기능={data[i,2]}]")
-        ideal = np.array([0, 0, 0])
-        anti_ideal = np.array([14, 14, 14])
-        log.append(f"  - 이상점: [0, 0, 0]")
-        log.append(f"  - 반이상점: [14, 14, 14]")
+        log.append("🔹 5. TOPSIS 부작용 순위")
+        data = np.array([
+            [get_onehot(age_score * abx_risk[abx]['age']),
+             get_onehot(creat_score * abx_risk[abx]['creatinine']),
+             get_onehot(hepatic_score * abx_risk[abx]['hepatic'])]
+            for abx in final_candidates
+        ])
+        ideal, anti_ideal = np.array([0, 0, 0]), np.array([MAX_ONEHOT, MAX_ONEHOT, MAX_ONEHOT])
         dist_to_ideal = np.linalg.norm(data - ideal, axis=1)
         dist_to_anti = np.linalg.norm(data - anti_ideal, axis=1)
-        log.append("  - 이상점까지 거리:")
-        for i, abx in enumerate(final_candidates):
-            log.append(f"    · {abx}: {dist_to_ideal[i]:.3f}")
-        log.append("  - 반이상점까지 거리:")
-        for i, abx in enumerate(final_candidates):
-            log.append(f"    · {abx}: {dist_to_anti[i]:.3f}")
         Ci = dist_to_anti / (dist_to_ideal + dist_to_anti + 1e-9)
-        if np.any(np.isnan(Ci)):
-            log.append("  ⚠ TOPSIS 계산 중 오류: 유효하지 않은 Ci 값")
-            topsis_result = final_candidates
-        else:
-            sorted_idx = np.argsort(-Ci)
-            topsis_result = [f"{final_candidates[i]} (Ci={Ci[i]:.3f})" for i in sorted_idx]
-            log.append("  - Ci 값 (높을수록 부작용 적음):")
-            for i, abx in enumerate(final_candidates):
-                log.append(f"    · {abx}: {Ci[i]:.3f}")
-            log.append("  - 최종 순위:")
-            for rec in topsis_result:
-                log.append(f"    · {rec}")
+        sorted_idx = np.argsort(-Ci)
+        topsis_result = [f"{final_candidates[i]} (Ci={Ci[i]:.3f})" for i in sorted_idx]
+        log.append("  - 순위:")
+        log.extend([f"    · {res}" for res in topsis_result])
     else:
+        log.append("⚠ 추천 항생제 없음")
         topsis_result = []
-        log.append("🔹 TOPSIS 부작용 순위 계산")
-        log.append("  ⚠ 추천 항생제 없음, TOPSIS 계산 생략")
+
+    log.append("━━━━━━━━━━━━━━━━━━━━━━━")
+    return final_candidates, log
+
+def recommend_empiric_antibiotics(patient):
+    log = ["━━━━━━━━━━━━━━━━━━━━━━━", "🔍 Empiric 항생제 추천 (감염균 미확인)"]
+    age_score, creat_score, hepatic_score = get_status_score(
+        patient['age_category'], 
+        patient['renal_function']['creatinine_category'], 
+        patient['hepatic_function']['bilirubin_category']
+    )
+    patient_states = get_patient_states(age_score, creat_score, hepatic_score)
+    allergy = set(patient.get('allergy', []))
+    drug_inter = set(patient.get('drug_interactions', []))
+    state_str = ", ".join(patient_states) if patient_states else "없음"
+    log.append(f"  - 극도의 상태: {state_str}")
+    log.append(f"  - 알러지: {', '.join(allergy) if allergy else '없음'}")
+    log.append(f"  - 약물 상호작용: {', '.join(drug_inter) if drug_inter else '없음'}")
+
+    # 1. 초기 후보 (광범위 항생제 우선 고려)
+    candidates = [abx for abx in abx_nodes if len(abx_to_gram[abx]) == 2]  # Broad-spectrum 우선
+    candidates += [abx for abx in abx_nodes if abx not in candidates]  # 나머지 추가
+    log.append("🔹 1. 초기 후보")
+    log.append(f"  - 후보: {', '.join(candidates)}")
+
+    # 2. 독성 필터링
+    filtered = []
+    eliminated_state = []
+    for abx in candidates:
+        toxic_reasons = []
+        if "extreme_age" in patient_states and abx_risk[abx]['age'] >= 4:
+            toxic_reasons.append("extreme_age")
+        if "extreme_creatinine" in patient_states and abx_risk[abx]['creatinine'] >= 4:
+            toxic_reasons.append("extreme_creatinine")
+        if "extreme_hepatic" in patient_states and abx_risk[abx]['hepatic'] >= 4:
+            toxic_reasons.append("extreme_hepatic")
+        if toxic_reasons:
+            eliminated_state.append(f"  · {abx}: 독성 위험 ({', '.join(toxic_reasons)})")
+        else:
+            filtered.append(abx)
+    log.append("🔹 2. 독성 필터링")
+    log.append(f"  - 후보: {', '.join(filtered) if filtered else '없음'}")
+    log.append("  ⮩ [제외]: " + (", ".join(eliminated_state) if eliminated_state else "없음"))
+
+    # 3. 알러지/약물 상호작용 필터링
+    final_candidates = []
+    eliminated_allergy = []
+    for abx in filtered:
+        reasons = []
+        if abx in allergy:
+            reasons.append("알러지")
+        if abx in drug_inter:
+            reasons.append("약물 상호작용")
+        if reasons:
+            eliminated_allergy.append(f"  · {abx}: {', '.join(reasons)}")
+        else:
+            final_candidates.append(abx)
+    log.append("🔹 3. 알러지/상호작용 필터링")
+    log.append(f"  - 최종 후보: {', '.join(final_candidates) if final_candidates else '없음'}")
+    log.append("  ⮩ [제외]: " + (", ".join(eliminated_allergy) if eliminated_allergy else "없음"))
+
+    # 4. TOPSIS 순위 계산
+    if final_candidates:
+        log.append("🔹 4. TOPSIS 부작용 순위")
+        data = np.array([
+            [get_onehot(age_score * abx_risk[abx]['age']),
+             get_onehot(creat_score * abx_risk[abx]['creatinine']),
+             get_onehot(hepatic_score * abx_risk[abx]['hepatic'])]
+            for abx in final_candidates
+        ])
+        ideal, anti_ideal = np.array([0, 0, 0]), np.array([MAX_ONEHOT, MAX_ONEHOT, MAX_ONEHOT])
+        dist_to_ideal = np.linalg.norm(data - ideal, axis=1)
+        dist_to_anti = np.linalg.norm(data - anti_ideal, axis=1)
+        Ci = dist_to_anti / (dist_to_ideal + dist_to_anti + 1e-9)
+        sorted_idx = np.argsort(-Ci)
+        topsis_result = [f"{final_candidates[i]} (Ci={Ci[i]:.3f})" for i in sorted_idx]
+        log.append("  - 순위:")
+        log.extend([f"    · {res}" for res in topsis_result])
+    else:
+        log.append("⚠ 추천 항생제 없음")
+        topsis_result = []
+
     log.append("━━━━━━━━━━━━━━━━━━━━━━━")
     return final_candidates, log
 
 def get_user_input():
     print("=== 환자 데이터 입력 ===")
     patient_id = input("환자 ID를 입력하세요: ").strip()
-    
-    print("나이 카테고리 (1~5)를 선택하세요:")
-    print("1: 10세 이하, 2: 11~30세, 3: 31~50세, 4: 51~60세, 5: 61세 이상")
-    while True:
-        try:
-            age_category = int(input("선택 (1~5): "))
-            if 1 <= age_category <= 5:
-                break
-            print("1~5 사이의 숫자를 입력하세요.")
-        except ValueError:
-            print("숫자를 입력하세요.")
 
-    print("\n신장수치(크레아티닌) 카테고리 (1~5)를 선택하세요:")
-    print("1: 0.9 이하, 2: 0.9~1.2, 3: 1.2~1.8, 4: 1.8~2.3, 5: 2.3 초과")
-    while True:
-        try:
-            creatinine_category = int(input("선택 (1~5): "))
-            if 1 <= creatinine_category <= 5:
-                break
-            print("1~5 사이의 숫자를 입력하세요.")
-        except ValueError:
-            print("숫자를 입력하세요.")
+    # 감염균 확인 여부
+    pathogen_known = input("감염균을 아나요? (y/n): ").strip().lower() == 'y'
 
-    print("\n빌리루빈 카테고리 (1~5)를 선택하세요:")
-    print("1: 0.9 이하, 2: 0.9~1.2, 3: 1.2~1.8, 4: 1.8~2.3, 5: 2.3 초과")
-    while True:
-        try:
-            bilirubin_category = int(input("선택 (1~5): "))
-            if 1 <= bilirubin_category <= 5:
-                break
-            print("1~5 사이의 숫자를 입력하세요.")
-        except ValueError:
-            print("숫자를 입력하세요.")
+    # 공통 입력
+    print("나이 카테고리 (1~5): 1: 10세 이하, 2: 11~30세, 3: 31~50세, 4: 51~60세, 5: 61세 이상")
+    age_category = validate_category(input("선택: "), "나이 카테고리")
 
-    print("\n감염균을 선택하세요:")
-    for i, agent in enumerate(infectious_agents, 1):
-        print(f"{i}. {agent}")
-    while True:
-        try:
-            agent_idx = int(input("선택 (1~7): "))
-            if 1 <= agent_idx <= len(infectious_agents):
-                break
-            print(f"1~{len(infectious_agents)} 사이의 숫자를 입력하세요.")
-        except ValueError:
-            print("숫자를 입력하세요.")
-    infectious_agent = infectious_agents[agent_idx - 1]
-    gram_status = agent_to_gram[infectious_agent]
+    print("\n신장수치(크레아티닌) 카테고리 (1~5): 1: 0.9 이하, 2: 0.9~1.2, 3: 1.2~1.8, 4: 1.8~2.3, 5: 2.3 초과")
+    creatinine_category = validate_category(input("선택: "), "신장수치 카테고리")
 
-    print("\n알러지 항생제 (쉼표로 구분, 없으면 엔터):")
+    print("\n빌리루빈 카테고리 (1~5): 1: 0.9 이하, 2: 0.9~1.2, 3: 1.2~1.8, 4: 1.8~2.3, 5: 2.3 초과")
+    bilirubin_category = validate_category(input("선택: "), "빌리루빈 카테고리")
+
+    print("\n알러지 항생제 (쉼표로 구분, 없으면 엔터, 유효 항생제: " + ", ".join(abx_nodes) + "):")
     allergy_input = input().strip()
-    allergy = [a.strip() for a in allergy_input.split(",") if a.strip()] if allergy_input else []
+    allergy = validate_antibiotics([a.strip() for a in allergy_input.split(",") if a.strip()], abx_nodes, "알러지")
 
-    print("약물 상호작용 항생제 (쉼표로 구분, 없으면 엔터):")
+    print("\n약물 상호작용 항생제 (쉼표로 구분, 없으면 엔터, 유효 항생제: " + ", ".join(abx_nodes) + "):")
     drug_inter_input = input().strip()
-    drug_inter = [d.strip() for d in drug_inter_input.split(",") if d.strip()] if drug_inter_input else []
-
-    print("\n항생제별 감수성(S, I, R) 입력 (없으면 엔터, 기본값 S):")
-    susceptibility = {}
-    for abx in abx_nodes:
-        print(f"{abx}:")
-        sir = input("감수성 (S, I, R 또는 엔터): ").strip().upper()
-        if sir == "" or sir in ["S", "I", "R"]:
-            susceptibility[abx] = "S" if sir == "" else sir
+    drug_inter = validate_antibiotics([d.strip() for d in drug_inter_input.split(",") if d.strip()], abx_nodes, "약물 상호작용")
 
     patient = {
         "patient_id": patient_id,
         "age_category": age_category,
         "renal_function": {"creatinine_category": creatinine_category},
         "hepatic_function": {"bilirubin_category": bilirubin_category},
-        "infectious_agent": infectious_agent,
-        "gram_status": gram_status,
         "allergy": allergy,
         "drug_interactions": drug_inter,
-        "susceptibility": {infectious_agent: susceptibility}
+        "pathogen_known": pathogen_known
     }
+
+    if pathogen_known:
+        print("\n감염균 선택:")
+        for i, agent in enumerate(infectious_agents, 1):
+            print(f"{i}. {agent}")
+        while True:
+            try:
+                agent_idx = int(input(f"선택 (1~{len(infectious_agents)}): "))
+                if 1 <= agent_idx <= len(infectious_agents):
+                    break
+                print(f"1~{len(infectious_agents)} 사이의 숫자를 입력하세요.")
+            except ValueError:
+                print("숫자를 입력하세요.")
+        infectious_agent = infectious_agents[agent_idx - 1]
+        patient["infectious_agent"] = infectious_agent
+        patient["gram_status"] = agent_to_gram[infectious_agent]
+        susceptibility = {}
+        print("\n항생제별 감수성(S, I, R, 기본값 S):")
+        for abx in abx_nodes:
+            sir = input(f"{abx}: ").strip().upper()
+            susceptibility[abx] = "S" if sir == "" else sir
+            if sir not in ["", "S", "I", "R"]:
+                print(f"경고: {abx}의 감수성 {sir}은 유효하지 않음. 기본값 S로 설정.")
+        patient["susceptibility"] = {infectious_agent: susceptibility}
+
     return patient
 
 def main():
@@ -363,28 +359,18 @@ def main():
         print(f"나이 카테고리: {patient['age_category']}")
         print(f"신장수치 카테고리: {patient['renal_function']['creatinine_category']}")
         print(f"빌리루빈 카테고리: {patient['hepatic_function']['bilirubin_category']}")
-        print(f"감염균: {patient['infectious_agent']} ({patient['gram_status']})")
         print(f"알러지: {', '.join(patient['allergy']) if patient['allergy'] else '없음'}")
         print(f"약물 상호작용: {', '.join(patient['drug_interactions']) if patient['drug_interactions'] else '없음'}")
-        print("\n감수성:")
-        for abx, sir in patient['susceptibility'][patient['infectious_agent']].items():
-            print(f"  {abx}: {sir}")
+        if patient['pathogen_known']:
+            print(f"감염균: {patient['infectious_agent']} ({patient['gram_status']})")
+            print("감수성:")
+            for abx, sir in patient['susceptibility'][patient['infectious_agent']].items():
+                print(f"  {abx}: {sir}")
+        else:
+            print("감염균: 미확인")
 
         print("\n=== 추천 결과 ===")
-        result, log = recommend_antibiotics(patient)
-        if result:
-            print("추천 항생제:")
-            for abx in result:
-                print(f"- {abx}")
+        if patient['pathogen_known']:
+            result, log = recommend_antibiotics(patient)
         else:
-            print("⚠ 추천 항생제가 없습니다.")
-        
-        print("\n=== 추천 Reasoning Log ===")
-        print("\n".join(log))
-
-        again = input("\n다른 환자를 입력하시겠습니까? (y/n): ").strip().lower()
-        if again != 'y':
-            break
-
-if __name__ == "__main__":
-    main()
+            result, log = recommend_empir
